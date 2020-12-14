@@ -1,2 +1,2 @@
 # engineering
-koncepcyjny sterownik do uprawy roślin
+koncepcyjny sterownik do uprawy roślin tak mi sie wydaje
