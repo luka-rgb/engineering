@@ -44,24 +44,24 @@
 //----------------------------------------------------------------------------------------
 // tu konfigurujemy port i piny do jakich pod³¹czymy linie D7..D4 LCD
 #define LCD_D7PORT  C
-#define LCD_D7 6
+#define LCD_D7 7
 #define LCD_D6PORT  C
-#define LCD_D6 5
+#define LCD_D6 6
 #define LCD_D5PORT  C
-#define LCD_D5 4
+#define LCD_D5 5
 #define LCD_D4PORT  C
-#define LCD_D4 3
+#define LCD_D4 4
 
 
 // tu definiujemy piny procesora do których pod³¹czamy sygna³y RS,RW, E
 #define LCD_RSPORT C
-#define LCD_RS 0
+#define LCD_RS 2
 
 #define LCD_RWPORT C
 #define LCD_RW 1
 
 #define LCD_EPORT C
-#define LCD_E 2
+#define LCD_E 3
 //------------------------------------------------  koniec ustawieñ sprzêtowych ---------------
 
 
