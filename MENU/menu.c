@@ -156,28 +156,29 @@ if (((value >= 1000) && (value <= 1023)) && (!key_lock)) //naciœniêty S1, value 
 	key = 1;
 	menu_event = key;
 	key_lock = 1;
+
 } else if ((value > 900) && (value <= 950) && (!key_lock))  //naciœniêty S2
 {
 	key = 2;
 	menu_event = key;
 	key_lock = 1;
+
 } else if ((value > 590) && (value <= 620) && (!key_lock))  //naciœniêty S3
 {
 	key = 3;
 	menu_event = key;
 	key_lock = 1;
+
 } else if ((value > 420) && (value <= 500) && (!key_lock))  //naciœniêty S4
 {
 	key = 4;
 	menu_event = key;
-
 	key_lock = 1;
+
 } else if (((value < 100) && key_lock))	 //¿aden przycisk nie jest naciœniêty
 {
 	key_lock = 0;
 }
 
 }
-
-
 
