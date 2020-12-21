@@ -24,6 +24,8 @@ void change_menu();
 void menu_idle(uint8_t a,uint8_t b,uint8_t c);
 void wyswietl1(void);
 void wyswietl2(void);
-void zmiana_czasu(uint8_t event);
+void zmiana_godzin(void);
+void zmiana_minut(void);
+void read_key();
 
 #endif /* MENU_MENU_H_ */

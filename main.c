@@ -52,7 +52,6 @@ int main(void)
 				change_menu();
 			}
 
-
     }
     return 0;
 }
