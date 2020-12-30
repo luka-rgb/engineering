@@ -13,6 +13,7 @@
 #include "../I2C/I2C.h"
 #include "menu.h"
 #include "../LCD/lcd44780.h"
+#include "../DHT/dht.h"
 
 volatile uint8_t current_menu = 0;		//pocz¹tkowy stan menu
 volatile uint8_t menu_event = E_IDDLE;	//???
@@ -28,7 +29,7 @@ uint8_t months_temp = 6;
 uint8_t years_temp = 18;
 uint8_t bissextile;
 uint8_t humidity_temp;
-uint8_t temperature_temp;
+uint8_t temperature_temp = 20;
 uint8_t lighting_on_temp;
 uint8_t lighting_off_temp;
 uint8_t watering_amount_temp;
@@ -59,7 +60,7 @@ typedef struct {
 //KURSOR ZOSTAJE PODSWIETLONY JAK RAZ SIE GO W£¥CZY
 const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 				//  LP UP DN OK PREV
-				{ { 0, 0, 0, 1, 0 }, 			NULL					,	START1	,	START2	},
+				{ { 0, 0, 0, 9, 0 }, 			NULL					,	START1	,	START2	},
 				{ { 1, 1, 1, 2, 1 }, 			NULL					,	M_1_1	,	M_1_2	},
 				{ { 2, 2, 2, 3, 1 }, 			change_year				,	NULL	,	NULL	},
 				{ { 3, 3, 3, 4, 2 }, 			change_month			,	NULL	,	NULL	},
@@ -67,7 +68,12 @@ const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 				{ { 5, 5, 5, 6, 4 },			change_hour				,	NULL	,	NULL	},
 				{ { 6, 6, 6, 7, 5 },			change_minute			,	NULL	,	NULL	},
 				{ { 7, 7, 7, 8, 6 }, 			save_date_time			,	M_1_3	,	M_1_4	},
-				{ { 8, 8, 8, 9, 7 }, 			show_date_time			,	NULL	,	NULL	},
+				{ { 8, 8, 8, 9, 7 }, 			NULL					,	M_2_1	,	M_2_2	},
+				{ { 9, 9, 9, 10, 8 }, 			change_temperature		,	NULL	,	NULL	},
+				{ { 10, 10, 10, 10, 9 }, 		compare_temp			,	NULL	,	NULL	},
+
+
+				//{ { 8, 8, 8, 9, 7 }, 			show_date_time			,	NULL	,	NULL	},
 
 						/*
 				}
@@ -465,36 +471,30 @@ void display_temperature(void) {
 	lcd_str("Temperature");
 	lcd_locate(1, 2);
 	lcd_int(temperature_temp);
-	lcd_locate(1, 3);
-	lcd_str(" oC");		//jak wyœwietlic znak stopni celsjusza?
+	lcd_locate(1, 4);
+	lcd_str("oC");		//jak wyœwietlic znak stopni celsjusza?
 }
 
 void change_temperature(void) {
 	display_temperature();
-	loop = 1;
-
-	while (loop) {
-		lcd_locate(1, 4);
-		lcd_cursor_on();
-		read_key();
-		switch (menu_event) {
-		case E_OK:
-			loop = 0;
-			break;
-		case E_UP:
-			if (temperature_temp < 100) {
-				temperature_temp++;
-			}
-			display_temperature();
-			break;
-		case E_DW:
-			if (temperature_temp > 14) {
-				temperature_temp--;
-			}
-			display_temperature();
-			break;
+	lcd_locate(1, 4);
+	lcd_cursor_on();
+	read_key();
+	switch (menu_event) {
+	case E_UP:
+		if (temperature_temp < 40) {
+			temperature_temp++;
 		}
+		display_temperature();
+		break;
+	case E_DW:
+		if (temperature_temp > 20) {//czy da siê sch³odzic do 20 stopni przez nawiew?
+			temperature_temp--;
+		}
+		display_temperature();
+		break;
 	}
+	get_temp_hum();
 }
 
 void change_minute(void) {

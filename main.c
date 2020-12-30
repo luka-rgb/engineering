@@ -71,8 +71,10 @@ int main(void)
 		loop_until_bit_is_clear(ADCSRA, ADSC);
 		value = ADC;
 		/*sprintf(ADC_pomiar, "%d  ", value);
+		 *
 */
-	/*	read_key();
+		/*
+		read_key();
 		if (menu_event)
 			{
 				change_menu();
