@@ -15,7 +15,9 @@ References:
 
 
 void get_temp_hum(void);
-void compare_temp(void);
+void compare_temp_hum(void);
+void reg_temp(void);
+void get_temp_hum(void);
 
 #include <stdio.h>
 #include <avr/io.h>

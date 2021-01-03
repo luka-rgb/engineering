@@ -16,7 +16,13 @@
 #include "../MENU/menu.h"
 #include "dht.h"
 
+#define HEAT (1<<PD0)			//makro okreœlaj¹ce HEAT jako pin PD6
+#define AIR (1<<PD1)
+#define FOG (1<<PD2)
+
 extern uint8_t temperature_temp;	//czy bez tego bêdzie widzia³o t¹ zmienn¹
+extern uint8_t humidity_temp;
+uint8_t temp_higher, temp_lower, temp_eq, hum_higher, hum_lower, hum_eq;
 
 int8_t temperature = 0;
 int8_t humidity = 0;
@@ -133,7 +139,8 @@ int8_t dht_gettemperaturehumidity(int8_t *temperature, int8_t *humidity) {
 	return dht_getdata(temperature, humidity);
 }
 
-void get_temp_hum(void) {
+void show_temp_hum(void) {
+	compare_temp_hum();
 	if (dht_gettemperaturehumidity(&temperature, &humidity) != -1) {
 
 		itoa(temperature, printbuff, 10);
@@ -149,22 +156,61 @@ void get_temp_hum(void) {
 		lcd_str("hum: ");
 		lcd_str(printbuff);
 		lcd_str(" %RH");
-//_delay_ms(1000);	//niepotrzebny delay tylko muszê raz wywo³ywac funkcjê
 	} else {
 		lcd_locate(0, 0);
 		lcd_str("error");
 	}
 }
 
-void compare_temp(void) { //na warunku z tego bêdzie realizowane wietrzenie i grzanie
-	uint8_t comp_temp;
-	if (temperature == temperature_temp) {
-		comp_temp = 1;
-		lcd_locate(0, 0);
-		lcd_str("temp zgodne");
+void get_temp_hum(void) {
+	if (dht_gettemperaturehumidity(&temperature, &humidity) != -1) {
+
+		itoa(temperature, printbuff, 10);
+		itoa(humidity, printbuff, 10);
 	} else {
-		comp_temp = 0;
 		lcd_locate(0, 0);
-		lcd_str("temp niezgodne");
+		lcd_str("error");
 	}
+}
+
+void compare_temp_hum(void) { //na warunku z tego bêdzie realizowane wietrzenie i grzanie
+
+	if (temperature > temperature_temp) {
+		temp_higher = 1;
+		/*
+		 lcd_locate(0, 0);
+		 lcd_int(temperature);
+		 lcd_locate(0, 3);
+		 lcd_int(temperature_temp);
+		 lcd_locate(0, 5);
+		 lcd_str("wieksza");
+		 */
+	} else if (temperature < temperature_temp) {
+		temp_lower = 1;
+	}
+	if (humidity > humidity_temp) {
+		hum_higher = 1;
+	} else if (humidity < humidity_temp) {
+		hum_lower = 1;
+	}
+}
+
+void reg_temp(void) {
+
+//	if (temp_higher == 1) {
+//		PORTD |= AIR;
+//		PORTD &= ~HEAT;
+//	} else if (temp_lower == 1) {
+//		PORTD |= HEAT;
+//		PORTD &= ~AIR;
+//	}
+
+	if (hum_higher == 1) {
+		PORTD |= AIR;
+		PORTD &= ~FOG;
+	} else if (hum_lower == 1) {
+		PORTD |= FOG;
+		PORTD &= ~AIR;
+	}
+
 }

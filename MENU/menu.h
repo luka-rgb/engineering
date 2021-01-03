@@ -48,7 +48,7 @@ void save(void);
 void save_parameters(void);
 void if_bissextile(void);
 void show_date_time(void);
-
+void show_temp_hum(void);
 void read_key();
 
 #endif /* MENU_MENU_H_ */
