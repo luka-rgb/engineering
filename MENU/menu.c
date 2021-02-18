@@ -18,6 +18,8 @@
 volatile uint8_t current_menu = 0;		//pocz¹tkowy stan menu
 volatile uint8_t menu_event = E_IDDLE;	//???
 volatile uint8_t loop = 0;
+char  ADC_pomiar[17];
+volatile uint16_t value;
 
 uint8_t bufor[7];
 //zamiast zmiennych poni¿ej zrobic struct??
@@ -36,13 +38,13 @@ uint8_t watering_amount_temp;
 uint8_t watering_freq_temp;
 uint8_t sekundy = 0, minuty, godziny, dni, miesiace, lata;
 
-const char START1[] PROGMEM = { "Press ok" };
-const char START2[] PROGMEM = { "to start" };
-const char M_1_1[] PROGMEM = { "Setting" };
-const char M_1_2[] PROGMEM = { "time and date" };
-const char M_1_3[] PROGMEM = { "Time and date" };
-const char M_1_4[] PROGMEM = { "saved" };
-const char M_2_1[] PROGMEM = { "Define" };
+const char START1[] PROGMEM = { "Wci" "\x82" "nij ok" };
+const char START2[] PROGMEM = { "\x83" "eby" " zacz" "\x80" "\x81" };
+const char M_1_1[] PROGMEM = { "Ustaw" };
+const char M_1_2[] PROGMEM = { "czas i dat" "\x84" };
+const char M_1_3[] PROGMEM = { "Czas i data" };
+const char M_1_4[] PROGMEM = { "zapisane" };
+const char M_2_1[] PROGMEM = { "Zdefiniuj" };
 const char M_2_2[] PROGMEM = { "program" };
 const char M_3_1[] PROGMEM = { "To save press ok " };
 const char M_4_1[] PROGMEM = { "Modify program"};
@@ -60,7 +62,7 @@ typedef struct {
 //KURSOR ZOSTAJE PODSWIETLONY JAK RAZ SIE GO W£¥CZY
 const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 				//  LP UP DN OK PREV
-				{ { 0, 0, 0, 9, 0 }, 			NULL					,	START1	,	START2	},
+				{ { 0, 0, 0, 1, 0 }, 			NULL					,	START1	,	START2	},
 				{ { 1, 1, 1, 2, 1 }, 			NULL					,	M_1_1	,	M_1_2	},
 				{ { 2, 2, 2, 3, 1 }, 			change_year				,	NULL	,	NULL	},
 				{ { 3, 3, 3, 4, 2 }, 			change_month			,	NULL	,	NULL	},
@@ -68,11 +70,13 @@ const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 				{ { 5, 5, 5, 6, 4 },			change_hour				,	NULL	,	NULL	},
 				{ { 6, 6, 6, 7, 5 },			change_minute			,	NULL	,	NULL	},
 				{ { 7, 7, 7, 8, 6 }, 			save_date_time			,	M_1_3	,	M_1_4	},
-				{ { 8, 8, 8, 9, 7 }, 			NULL					,	M_2_1	,	M_2_2	},
-				{ { 9, 9, 9, 10, 8 }, 			change_temperature		,	NULL	,	NULL	},
-				{ { 10, 10, 10, 11, 9 }, 		change_humidity			,	NULL	,	NULL	},
-				{ { 11, 11, 11, 11, 10 }, 		show_temp_hum		,	NULL	,	NULL	},
-
+				{ { 8, 8, 8, 9, 7 }, 			show_date_time			,	NULL	,	NULL	},
+				{ { 9, 9, 9, 10, 8 }, 			NULL					,	M_2_1	,	M_2_2	},
+				{ { 10, 10, 10, 11, 9 }, 		change_temperature		,	NULL	,	NULL	},
+				{ { 11, 11, 11, 12, 10 }, 		change_humidity			,	NULL	,	NULL	},
+				{ { 12, 12, 12, 13, 11 },		show_temp_hum			,	NULL	,	NULL	},
+				{ { 13, 13, 13, 14, 12 },		check_if_water			,	NULL	,	NULL	},
+				{ { 14, 14, 14, 14, 13 },		check_water_level		,	NULL	,	NULL	},
 
 				//{ { 8, 8, 8, 9, 7 }, 			show_date_time			,	NULL	,	NULL	},
 
@@ -123,7 +127,7 @@ void change_menu() {
 void display_change_time(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
-	lcd_str("Godzina - hh/mm");
+	lcd_str("Godzina - GG/MM");
 	if (hours_temp > 9) {
 		lcd_locate(1, 0);
 		lcd_int(hours_temp);
@@ -152,7 +156,7 @@ void if_bissextile(void) {
 void display_change_date(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
-	lcd_str("Date");
+	lcd_str("Data");
 	if (days_temp < 10) {
 		lcd_locate(1, 0);
 		lcd_int(0);
@@ -286,6 +290,38 @@ void change_year(void) {
 	}
 }
 
+void check_water_level(void) {
+	ADCSRA = (1 << ADEN); 					//w³¹czenie przetwornika ADC
+	ADCSRA |= (1 << ADPS2) | (1 << ADPS1);	//ustawienie przeskalera na 64
+	ADMUX |= (1 << REFS0);					//wybór napiêcia odniesienia z wczeœniej zdefiniowanych makr
+	ADMUX |= 1; 							//wybór u¿ywanego pinu ADC, domyœlanie u¿ywany jest PA0
+
+	ADCSRA |= (1 << ADSC);	//start konwersji
+	loop_until_bit_is_clear(ADCSRA, ADSC);
+	value = ADC;
+	sprintf(ADC_pomiar, "%d  ", value);
+
+	lcd_locate(0, 0);
+	lcd_int(value);
+}
+
+void check_if_water(void) {
+	if (PINA & (1<<PA3)) {
+				lcd_cls();
+				lcd_locate(1, 0);
+				lcd_str("polaczone");
+				//_delay_ms(200);
+
+			} else if (!(PINA & (1<<PA3)))	{
+				lcd_cls();
+				lcd_locate(0,0);
+				lcd_str("nie");
+				lcd_locate(1,0);
+				lcd_str("polaczone");
+			//	_delay_ms(200);
+			}
+}
+
 void display_watering_amount(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
@@ -372,10 +408,10 @@ void change_watering_freq(void) {
 void display_change_humidity(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
-	lcd_str("Humidity");
+	lcd_str("Wilgotno" "\x82" "\x81");
 	lcd_locate(1, 0);
 	lcd_int(humidity_temp);
-	lcd_locate(1, 5);
+	lcd_locate(1, 2);
 	lcd_str("%RH");
 }
 
@@ -447,11 +483,11 @@ void change_lighting(void) {
 void display_temperature(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
-	lcd_str("Temperature");
+	lcd_str("Temperatura");
 	lcd_locate(1, 2);
 	lcd_int(temperature_temp);
 	lcd_locate(1, 4);
-	lcd_str("oC");		//jak wyœwietlic znak stopni celsjusza?
+	lcd_str("\x87" "C");
 }
 
 void change_temperature(void) {
@@ -547,7 +583,7 @@ void save_date_time(void) {
 	bufor[0] = dec2bcd((seconds_temp) & 0x7F);		//operacja bitowa and gwarantuje, ¿e na pierwszym miejscu bêdzie 0 i osc zostanie w³¹czony i zacznie isc czas
 	bufor[1] = dec2bcd(minutes_temp);
 	bufor[2] = dec2bcd(hours_temp);
-	bufor[3] = dec2bcd(days_temp);
+	bufor[4] = dec2bcd(days_temp);
 	bufor[5] = dec2bcd(months_temp);
 	bufor[6] = dec2bcd(years_temp);
 
@@ -565,7 +601,7 @@ void show_date_time(void) {
 	sekundy = bcd2dec(bufor[0]);
 	minuty = bcd2dec(bufor[1]);
 	godziny = bcd2dec(bufor[2]);
-	dni = bcd2dec(bufor[3]);
+	dni = bcd2dec(bufor[4]);
 	miesiace = bcd2dec(bufor[5]);
 	lata = bcd2dec(bufor[6]);
 

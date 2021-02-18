@@ -33,55 +33,61 @@ volatile uint16_t value;
 volatile uint8_t key_lock;	//volatile oznacza, ¿e zmienna mo¿e byc zmieniona z zewn¹trz
 
 
+int main(void) {
 
-int main(void)
-{
+lcd_init();
 
-	lcd_init();
+//inicjalizacja ADC
+	ADCSRA = (1<<ADEN); 	//w³¹czenie przetwornika ADC
+	ADCSRA |= (1<<ADPS2) | (1<<ADPS1);	//ustawienie przeskalera na 64
+	ADMUX |= REF_256;	//wybór napiêcia odniesienia z wczeœniej zdefiniowanych makr
+//	ADMUX |= 1; 		//wybór u¿ywanego pinu ADC, domyœlanie u¿ywany jest PA0
 
-	i2cSetBitrate(100); // USTAWIAMY prêdkoœæ 100 kHz na magistrali I2C
+i2cSetBitrate(100); // USTAWIAMY prêdkoœæ 100 kHz na magistrali I2C
 
-	sei();
 
-	//char stopien = 0xF3;
+
+
+//przenieœc to do inicjalizacji
+DDRA |= (1<<PA2);
+DDRA &= ~(1<<PA3);
+
+PORTA |= (1<<PA2);
+
+
+
+
+
+while (1) {
+
+	ADCSRA |= (1 << ADSC);	//start konwersji
+				loop_until_bit_is_clear(ADCSRA, ADSC);
+				value = ADC;
+				sprintf(ADC_pomiar, "%d  ", value);
+
+		//		lcd_locate(0,0);
+		//		lcd_int(value);
+
+	//if (PINA & (1<<PA3)) {
+		//lcd_cls();
+		//lcd_locate(1, 0);
+		//lcd_str("connected");
+		//_delay_ms(200);
+
+	//} else if (!(PINA & (1<<PA3)))	{
+		//lcd_cls();
+		//lcd_locate(0,0);
+		//lcd_str("not");
+	//	lcd_locate(1,0);
+//		lcd_str("connected");
+		//_delay_ms(200);
+	//}
+	read_key();
+	if (menu_event) {
+		change_menu();
+	}
+
 	//lcd_char(stopien);
-
-	/*inicjalizacja ADC*/
-	ADCSRA |= (1 << ADEN);	 	//w³¹czenie przetwornika ADC
-	ADCSRA |= (1 << ADPS2);
-	ADCSRA |= (1 << ADPS1);		//preskaler = 16 teraz 64
-	ADMUX |= REF_256; 		//wybór napiêcia odniesiena z wczeœniejszych makr
-	//ADMUX |= 0;				//wybranie pinu ADC, którego u¿ywam, zakomentowane bo domyœlnie u¿ywany jest PA0
-
-
-
-	DDRD=0b11111111;		//ustawienie ca³ego portu C jako wyjœcie
-
-    while(1)
-    	{
-
-    	ADCSRA |= (1 << ADSC);	//start konwersji
-		loop_until_bit_is_clear(ADCSRA, ADSC);
-		value = ADC;
-		//sprintf(ADC_pomiar, "%d  ", value);
-
-
-
-																					read_key();
-																					if (menu_event)
-																						{
-																							change_menu();
-																						}
-
-
-
-
-
-
-
-
-																				//lcd_char(stopien);
-																				//get_temp_hum();
-    	}
-    return 0;
+}
+return 0;
 }

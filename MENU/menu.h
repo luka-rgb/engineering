@@ -21,6 +21,8 @@ extern volatile uint16_t value;
 extern volatile uint8_t key_lock;		// extern oznacza, ¿e zmienna jest zadeklarowana w innym pliku
 extern volatile uint8_t loop;
 extern volatile int loop_date;
+char  ADC_pomiar[17];
+volatile uint16_t value;
 
 //czy muszê dodac tutaj wszystkie zmienne, z których korzystam w menu.c??
 
@@ -29,6 +31,7 @@ void menu_idle(uint8_t a,uint8_t b,uint8_t c);	//czy to jest potrzebne? jak zrob
 void display_change_date(void);
 void change_day(void);
 void change_month(void);
+void check_water_level(void);
 void change_year(void);	//dodac w menu.c change_date
 void display_change_time(void);
 void change_hour(void);
@@ -43,6 +46,7 @@ void display_watering_amount(void);
 void change_watering_amount(void);
 void display_watering_freq(void);
 void change_watering_freq(void);
+void check_if_water(void);
 void save_date_time(void);
 void save(void);
 void save_parameters(void);

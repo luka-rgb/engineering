@@ -140,26 +140,28 @@ int8_t dht_gettemperaturehumidity(int8_t *temperature, int8_t *humidity) {
 }
 
 void show_temp_hum(void) {
-	compare_temp_hum();
+
 	if (dht_gettemperaturehumidity(&temperature, &humidity) != -1) {
 
 		itoa(temperature, printbuff, 10);
 
 		lcd_locate(0, 0);
-		lcd_str("temp: ");
+		lcd_str("temperatura ");
 		lcd_str(printbuff);
-		lcd_str(" oC");
+		lcd_str("\x87" "C");
 
 		itoa(humidity, printbuff, 10);
 
 		lcd_locate(1, 0);
-		lcd_str("hum: ");
+		lcd_str("wilgotno" "\x82" "\x81 ");
 		lcd_str(printbuff);
-		lcd_str(" %RH");
+		lcd_str("%RH");
 	} else {
 		lcd_locate(0, 0);
 		lcd_str("error");
 	}
+	compare_temp_hum();
+	reg_temp();
 }
 
 void get_temp_hum(void) {
@@ -177,6 +179,7 @@ void compare_temp_hum(void) { //na warunku z tego bêdzie realizowane wietrzenie 
 
 	if (temperature > temperature_temp) {
 		temp_higher = 1;
+		temp_lower = 0;
 		/*
 		 lcd_locate(0, 0);
 		 lcd_int(temperature);
@@ -187,11 +190,14 @@ void compare_temp_hum(void) { //na warunku z tego bêdzie realizowane wietrzenie 
 		 */
 	} else if (temperature < temperature_temp) {
 		temp_lower = 1;
+		temp_higher = 0;
 	}
 	if (humidity > humidity_temp) {
 		hum_higher = 1;
+		hum_lower = 0;
 	} else if (humidity < humidity_temp) {
 		hum_lower = 1;
+		hum_higher = 0;
 	}
 }
 
