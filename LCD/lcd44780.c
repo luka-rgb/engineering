@@ -525,4 +525,25 @@ void lcd_init(void)
 
 	// kasowanie ekranu
 	lcd_cls();
+
+	//definiowanie polskich znaków
+
+		uint8_t tab1[] = { 0, 0, 14, 1, 15, 17, 15, 2 };	//¹
+		uint8_t tab2[] = { 2, 4, 14, 16, 16, 17, 14, 0 };	//æ
+		uint8_t tab3[] = { 2, 4, 14, 16, 14, 1, 62, 0 };	//œ
+		uint8_t tab4[] = { 4, 0, 31, 2, 4, 8, 31, 0 };		//¿
+		uint8_t tab5[] = { 0, 0, 14, 17, 31, 16, 14, 4 };	//ê
+		uint8_t tab6[] = {};
+		uint8_t tab7[] = {};
+
+		uint8_t tab8[] = { 6, 9, 9, 6, 0, 0, 0, 0 };		//stopnie celsjusza
+
+		lcd_defchar(0x80, tab1);
+		lcd_defchar(0x81, tab2);
+		lcd_defchar(0x82, tab3);
+		lcd_defchar(0x83, tab4);
+		lcd_defchar(0x84, tab5);
+		lcd_defchar(0x85, tab6);
+		lcd_defchar(0x86, tab7);
+		lcd_defchar(0x87, tab8);
 }

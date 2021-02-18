@@ -9,15 +9,18 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
+#include <stdlib.h>
 #include <avr/pgmspace.h>
 #include <stdio.h>
 
 #include "LCD/lcd44780.h"
 #include "MENU/menu.h"
 #include "I2C/I2C.h"
+#include "DHT/dht.h"
 
 #define REF_256 (1<<REFS1)|(1<<REFS0)	//makro na napiêcie odniesienia wewnêtrzne 2,56
 #define REF_VCC (1<<REFS0)		//makro na napiêcie odniesienia VCC
+
 
 
 //uint8_t sekundy = 0, minuty, godziny, dni, miesiace;
@@ -29,71 +32,62 @@ char  ADC_pomiar[17];
 volatile uint16_t value;
 volatile uint8_t key_lock;	//volatile oznacza, ¿e zmienna mo¿e byc zmieniona z zewn¹trz
 
-volatile uint8_t int0_flag=1;
 
+int main(void) {
 
-int main(void)
-{
+lcd_init();
 
-	enum {ss = 0, mm, hh};
-				// rezerwacja bufora 4 bajty
-	//	uint8_t sekundy, minuty, godziny;
-		// Przerwanie INT0
-			MCUCR |= (1<<ISC01);	// wyzwalanie zboczem opadaj¹cym
-			GICR |= (1<<INT0);		// odblokowanie przerwania
-			PORTD |= (1<<PD2);		// podci¹gniêcie pinu INT0 do VCC
+//inicjalizacja ADC
+	ADCSRA = (1<<ADEN); 	//w³¹czenie przetwornika ADC
+	ADCSRA |= (1<<ADPS2) | (1<<ADPS1);	//ustawienie przeskalera na 64
+	ADMUX |= REF_256;	//wybór napiêcia odniesienia z wczeœniej zdefiniowanych makr
+//	ADMUX |= 1; 		//wybór u¿ywanego pinu ADC, domyœlanie u¿ywany jest PA0
 
-		lcd_init();
-
-			i2cSetBitrate( 100 ); // USTAWIAMY prêdkoœæ 100 kHz na magistrali I2C
-
-			sei();
-
-
-		//	char stopien = 0xB0;
-		//	lcd_char(stopien);
-
-			//bufor[0] = 0;			// setne czêœci sekundy
-
-
-				//			sekundy & 0x7F
-
-			//	bufor[0] = (dec2bcd(0) &0x7F);	// sekundy
-			//	bufor[1] = dec2bcd(34);	// minuty
-			//	bufor[2] = dec2bcd(14);	// godziny
-			//	bufor[3]= dec2bcd(11);
-			//	bufor[5]= dec2bcd(10);
-				//bufor[6]= dec2bcd(200);
-			//	I2C_WRITE_BUFFER( DS1307_ADDR, 0x00, 7, bufor );
-
-
-			//	lcd_str_P(PSTR("ZAPIS UDANY..."));
+i2cSetBitrate(100); // USTAWIAMY prêdkoœæ 100 kHz na magistrali I2C
 
 
 
-    /*inicjalizacja ADC*/
-    ADCSRA |= (1 << ADEN);	 	//w³¹czenie przetwornika ADC
-	ADCSRA |= (1 << ADPS2);
-	ADCSRA |= (1 << ADPS1);		//preskaler = 16 teraz 64
-	ADMUX |= REF_256; 			//wybór napiêcia odniesiena z wczeœniejszych makr
-	//ADMUX |= 0;				//wybranie pinu ADC, którego u¿ywam, zakomentowane bo domyœlnie u¿ywany jest PA0
 
-	show_date_time();
-    while(1)
-    	{
+//przenieœc to do inicjalizacji
+DDRA |= (1<<PA2);
+DDRA &= ~(1<<PA3);
 
-    		ADCSRA |= (1 << ADSC);	//start konwersji
-		loop_until_bit_is_clear(ADCSRA, ADSC);
-		value = ADC;
-		/*sprintf(ADC_pomiar, "%d  ", value);
-*/
-	/*	read_key();
-		if (menu_event)
-			{
-				change_menu();
-			}
-*/
+PORTA |= (1<<PA2);
 
-    	}
-    return 0;
+
+
+
+
+while (1) {
+
+	ADCSRA |= (1 << ADSC);	//start konwersji
+				loop_until_bit_is_clear(ADCSRA, ADSC);
+				value = ADC;
+				sprintf(ADC_pomiar, "%d  ", value);
+
+		//		lcd_locate(0,0);
+		//		lcd_int(value);
+
+	//if (PINA & (1<<PA3)) {
+		//lcd_cls();
+		//lcd_locate(1, 0);
+		//lcd_str("connected");
+		//_delay_ms(200);
+
+	//} else if (!(PINA & (1<<PA3)))	{
+		//lcd_cls();
+		//lcd_locate(0,0);
+		//lcd_str("not");
+	//	lcd_locate(1,0);
+//		lcd_str("connected");
+		//_delay_ms(200);
+	//}
+	read_key();
+	if (menu_event) {
+		change_menu();
+	}
+
+	//lcd_char(stopien);
+}
+return 0;
 }

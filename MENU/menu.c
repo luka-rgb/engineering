@@ -13,10 +13,13 @@
 #include "../I2C/I2C.h"
 #include "menu.h"
 #include "../LCD/lcd44780.h"
+#include "../DHT/dht.h"
 
 volatile uint8_t current_menu = 0;		//pocz¹tkowy stan menu
 volatile uint8_t menu_event = E_IDDLE;	//???
 volatile uint8_t loop = 0;
+char  ADC_pomiar[17];
+volatile uint16_t value;
 
 uint8_t bufor[7];
 //zamiast zmiennych poni¿ej zrobic struct??
@@ -27,21 +30,21 @@ uint8_t days_temp = 16;
 uint8_t months_temp = 6;
 uint8_t years_temp = 18;
 uint8_t bissextile;
-uint8_t humidity_temp;
-uint8_t temperature_temp;
+uint8_t humidity_temp = 40;			//okreslic mo¿liw¹ wartosc humidity
+uint8_t temperature_temp = 10;		//okreslic mozliw¹ wartosc temperature
 uint8_t lighting_on_temp;
 uint8_t lighting_off_temp;
 uint8_t watering_amount_temp;
 uint8_t watering_freq_temp;
 uint8_t sekundy = 0, minuty, godziny, dni, miesiace, lata;
 
-const char START1[] PROGMEM = { "Press ok" };
-const char START2[] PROGMEM = { "to start" };
-const char M_1_1[] PROGMEM = { "Setting" };
-const char M_1_2[] PROGMEM = { "time and date" };
-const char M_1_3[] PROGMEM = { "Time and date" };
-const char M_1_4[] PROGMEM = { "saved" };
-const char M_2_1[] PROGMEM = { "Define" };
+const char START1[] PROGMEM = { "Wci" "\x82" "nij ok" };
+const char START2[] PROGMEM = { "\x83" "eby" " zacz" "\x80" "\x81" };
+const char M_1_1[] PROGMEM = { "Ustaw" };
+const char M_1_2[] PROGMEM = { "czas i dat" "\x84" };
+const char M_1_3[] PROGMEM = { "Czas i data" };
+const char M_1_4[] PROGMEM = { "zapisane" };
+const char M_2_1[] PROGMEM = { "Zdefiniuj" };
 const char M_2_2[] PROGMEM = { "program" };
 const char M_3_1[] PROGMEM = { "To save press ok " };
 const char M_4_1[] PROGMEM = { "Modify program"};
@@ -68,6 +71,14 @@ const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 				{ { 6, 6, 6, 7, 5 },			change_minute			,	NULL	,	NULL	},
 				{ { 7, 7, 7, 8, 6 }, 			save_date_time			,	M_1_3	,	M_1_4	},
 				{ { 8, 8, 8, 9, 7 }, 			show_date_time			,	NULL	,	NULL	},
+				{ { 9, 9, 9, 10, 8 }, 			NULL					,	M_2_1	,	M_2_2	},
+				{ { 10, 10, 10, 11, 9 }, 		change_temperature		,	NULL	,	NULL	},
+				{ { 11, 11, 11, 12, 10 }, 		change_humidity			,	NULL	,	NULL	},
+				{ { 12, 12, 12, 13, 11 },		show_temp_hum			,	NULL	,	NULL	},
+				{ { 13, 13, 13, 14, 12 },		check_if_water			,	NULL	,	NULL	},
+				{ { 14, 14, 14, 14, 13 },		check_water_level		,	NULL	,	NULL	},
+
+				//{ { 8, 8, 8, 9, 7 }, 			show_date_time			,	NULL	,	NULL	},
 
 						/*
 				}
@@ -116,7 +127,7 @@ void change_menu() {
 void display_change_time(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
-	lcd_str("Godzina - hh/mm");
+	lcd_str("Godzina - GG/MM");
 	if (hours_temp > 9) {
 		lcd_locate(1, 0);
 		lcd_int(hours_temp);
@@ -145,7 +156,7 @@ void if_bissextile(void) {
 void display_change_date(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
-	lcd_str("Date");
+	lcd_str("Data");
 	if (days_temp < 10) {
 		lcd_locate(1, 0);
 		lcd_int(0);
@@ -194,11 +205,16 @@ void change_day(void) {
 	display_change_date();
 	lcd_locate(1, 1);
 	lcd_cursor_on();		//czy po wyjœciu z pêtli gaœnie kursor?
+	if_bissextile();
 	read_key();
 	switch (menu_event) {
 	case E_UP:
 		if ( (bissextile == 1) && (months_temp == 2) ) {
 			if (days_temp < 29) {
+				days_temp++;
+			}
+		} else if ((bissextile == 0) && (months_temp == 2)) {
+			if (days_temp < 28) {
 				days_temp++;
 			}
 		} else if ( (months_temp == 4) || (months_temp == 6) || (months_temp == 9) || (months_temp == 11) ) {
@@ -246,11 +262,7 @@ void change_month(void) {
 		display_change_date();
 		lcd_cursor_off();
 		break;
-	case E_OK:
-		loop = 0;
-		break;
 	}
-
 }
 
 void change_year(void) {
@@ -278,6 +290,38 @@ void change_year(void) {
 	}
 }
 
+void check_water_level(void) {
+	ADCSRA = (1 << ADEN); 					//w³¹czenie przetwornika ADC
+	ADCSRA |= (1 << ADPS2) | (1 << ADPS1);	//ustawienie przeskalera na 64
+	ADMUX |= (1 << REFS0);					//wybór napiêcia odniesienia z wczeœniej zdefiniowanych makr
+	ADMUX |= 1; 							//wybór u¿ywanego pinu ADC, domyœlanie u¿ywany jest PA0
+
+	ADCSRA |= (1 << ADSC);	//start konwersji
+	loop_until_bit_is_clear(ADCSRA, ADSC);
+	value = ADC;
+	sprintf(ADC_pomiar, "%d  ", value);
+
+	lcd_locate(0, 0);
+	lcd_int(value);
+}
+
+void check_if_water(void) {
+	if (PINA & (1<<PA3)) {
+				lcd_cls();
+				lcd_locate(1, 0);
+				lcd_str("polaczone");
+				//_delay_ms(200);
+
+			} else if (!(PINA & (1<<PA3)))	{
+				lcd_cls();
+				lcd_locate(0,0);
+				lcd_str("nie");
+				lcd_locate(1,0);
+				lcd_str("polaczone");
+			//	_delay_ms(200);
+			}
+}
+
 void display_watering_amount(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
@@ -298,37 +342,31 @@ void display_watering_amount(void) {
 
 void change_watering_amount(void) {
 	display_watering_amount();
-	loop = 1;
-
-	while (loop) {
-		lcd_locate(1, 3);
-		lcd_cursor_on();
-		read_key();
-		switch (menu_event) {
-		case E_OK:
-			loop = 0;
-			break;
-		case E_UP:
-			if (watering_amount_temp < 500) {
-				watering_amount_temp += 10;
-			}
-			display_watering_amount();
-			break;
-		case E_DW:
-			if (watering_amount_temp > 0) {
-				watering_amount_temp -= 10;
-			}
-			display_watering_amount();//sprawdzic czy dobre nazwy wszedzie w caseach s¹
-			break;
+	lcd_locate(1, 3);
+	lcd_cursor_on();
+	read_key();
+	switch (menu_event) {
+	case E_UP:
+		if (watering_amount_temp < 500) {
+			watering_amount_temp += 10;
 		}
+		display_watering_amount();
+		break;
+	case E_DW:
+		if (watering_amount_temp > 0) {
+			watering_amount_temp -= 10;
+		}
+		display_watering_amount();//sprawdzic czy dobre nazwy wszedzie w caseach s¹
+		break;
 	}
 }
 
-void display_watering_freq(void) {
+
+void display_watering_freq(void) {//dodac warunki na ró¿ne rzêdy wielkoœci dla kursora?
 	lcd_cls();
 	lcd_locate(0, 0);
 	lcd_str("Watering freq");
-	if (watering_freq_temp < 9) {
+	if (watering_freq_temp < 10) {
 		lcd_locate(1, 1);
 		lcd_str("Every");
 		lcd_locate(1, 7);
@@ -346,17 +384,10 @@ void display_watering_freq(void) {
 }
 
 void change_watering_freq(void) {
-	display_watering_freq();
-	loop = 1;
-
-	while (loop) {
-		lcd_locate(1, 3);//dodac warunki na ró¿ne rzêdy wielkoœci dla kursora?
+		lcd_locate(1, 3);
 		lcd_cursor_on();
 		read_key();
 		switch (menu_event) {
-		case E_OK:
-			loop = 0;
-			break;
 		case E_UP:
 			if (watering_freq_temp < 30) {
 				watering_freq_temp++;
@@ -371,45 +402,39 @@ void change_watering_freq(void) {
 			break;
 		}
 	}
-}
+
 
 //sprawdzic uklad wszystkiich case w switchach i poprawic
 void display_change_humidity(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
-	lcd_str("Humidity");
+	lcd_str("Wilgotno" "\x82" "\x81");
 	lcd_locate(1, 0);
 	lcd_int(humidity_temp);
-	lcd_locate(1, 5);
+	lcd_locate(1, 2);
 	lcd_str("%RH");
 }
 
 void change_humidity(void) {
 	display_change_humidity();
-	loop = 1;
-
-	while (loop) {
-		lcd_locate(1, 3);
-		lcd_cursor_on();
-		read_key();
-		switch (menu_event) {
-		case E_OK:
-			loop = 0;
-			break;
-		case E_UP:
-			if (humidity_temp < 100) {
-				humidity_temp++;
-			}
-			display_change_humidity();
-			break;
-		case E_DW:
-			if (humidity_temp > 0) {
-				humidity_temp--;
-			}
-			display_change_humidity();
-			break;
+	lcd_locate(1, 3);
+	lcd_cursor_on();
+	read_key();
+	switch (menu_event) {
+	case E_UP:
+		if (humidity_temp < 100) {
+			humidity_temp++;
 		}
+		display_change_humidity();
+		break;
+	case E_DW:
+		if (humidity_temp > 30) {
+			humidity_temp--;
+		}
+		display_change_humidity();
+		break;
 	}
+
 }
 
 void display_change_lighting(void) {
@@ -433,67 +458,56 @@ void display_change_lighting(void) {
 
 void change_lighting(void) {
 	display_change_lighting();
-	loop = 1;
-
-	while (loop) {
-		lcd_locate(1, 11);
-		lcd_cursor_on();
-		switch (menu_event) {
-		case E_OK:
-			loop = 0;
-			break;
-		case E_UP:
-			if (lighting_on_temp < 24) {
-				lighting_on_temp++;
-				lighting_off_temp--;
-			}
-			display_change_lighting();
-			break;
-		case E_DW:
-			if (lighting_on_temp > 0) {
-				lighting_on_temp--;
-				lighting_off_temp++;
-			}
-			display_change_lighting();
+	lcd_locate(1, 11);
+	lcd_cursor_on();
+	switch (menu_event) {
+	case E_OK:
+		loop = 0;
+		break;
+	case E_UP:
+		if (lighting_on_temp < 24) {
+			lighting_on_temp++;
+			lighting_off_temp--;
 		}
+		display_change_lighting();
+		break;
+	case E_DW:
+		if (lighting_on_temp > 0) {
+			lighting_on_temp--;
+			lighting_off_temp++;
+		}
+		display_change_lighting();
 	}
 }
 
 void display_temperature(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
-	lcd_str("Temperature");
+	lcd_str("Temperatura");
 	lcd_locate(1, 2);
 	lcd_int(temperature_temp);
-	lcd_locate(1, 3);
-	lcd_str(" oC");		//jak wyœwietlic znak stopni celsjusza?
+	lcd_locate(1, 4);
+	lcd_str("\x87" "C");
 }
 
 void change_temperature(void) {
 	display_temperature();
-	loop = 1;
-
-	while (loop) {
-		lcd_locate(1, 4);
-		lcd_cursor_on();
-		read_key();
-		switch (menu_event) {
-		case E_OK:
-			loop = 0;
-			break;
-		case E_UP:
-			if (temperature_temp < 100) {
-				temperature_temp++;
-			}
-			display_temperature();
-			break;
-		case E_DW:
-			if (temperature_temp > 14) {
-				temperature_temp--;
-			}
-			display_temperature();
-			break;
+	lcd_locate(1, 4);
+	lcd_cursor_on();
+	read_key();
+	switch (menu_event) {
+	case E_UP:
+		if (temperature_temp < 40) {
+			temperature_temp++;
 		}
+		display_temperature();
+		break;
+	case E_DW:
+		if (temperature_temp > 20) {//czy da siê sch³odzic do 20 stopni przez nawiew?
+			temperature_temp--;
+		}
+		display_temperature();
+		break;
 	}
 }
 
@@ -569,7 +583,7 @@ void save_date_time(void) {
 	bufor[0] = dec2bcd((seconds_temp) & 0x7F);		//operacja bitowa and gwarantuje, ¿e na pierwszym miejscu bêdzie 0 i osc zostanie w³¹czony i zacznie isc czas
 	bufor[1] = dec2bcd(minutes_temp);
 	bufor[2] = dec2bcd(hours_temp);
-	bufor[3] = dec2bcd(days_temp);
+	bufor[4] = dec2bcd(days_temp);
 	bufor[5] = dec2bcd(months_temp);
 	bufor[6] = dec2bcd(years_temp);
 
@@ -587,7 +601,7 @@ void show_date_time(void) {
 	sekundy = bcd2dec(bufor[0]);
 	minuty = bcd2dec(bufor[1]);
 	godziny = bcd2dec(bufor[2]);
-	dni = bcd2dec(bufor[3]);
+	dni = bcd2dec(bufor[4]);
 	miesiace = bcd2dec(bufor[5]);
 	lata = bcd2dec(bufor[6]);
 

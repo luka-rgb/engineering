@@ -11,6 +11,7 @@ RM := rm -rf
 -include MENU/subdir.mk
 -include LCD/subdir.mk
 -include I2C/subdir.mk
+-include DHT/subdir.mk
 -include subdir.mk
 -include objects.mk
 
