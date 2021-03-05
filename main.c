@@ -33,61 +33,106 @@ volatile uint16_t value;
 volatile uint8_t key_lock;	//volatile oznacza, ¿e zmienna mo¿e byc zmieniona z zewn¹trz
 
 
-int main(void) {
+extern uint8_t watering_freq_temp;
+extern uint8_t godziny;
 
-lcd_init();
-
-//inicjalizacja ADC
-	ADCSRA = (1<<ADEN); 	//w³¹czenie przetwornika ADC
-	ADCSRA |= (1<<ADPS2) | (1<<ADPS1);	//ustawienie przeskalera na 64
-	ADMUX |= REF_256;	//wybór napiêcia odniesienia z wczeœniej zdefiniowanych makr
-//	ADMUX |= 1; 		//wybór u¿ywanego pinu ADC, domyœlanie u¿ywany jest PA0
-
-i2cSetBitrate(100); // USTAWIAMY prêdkoœæ 100 kHz na magistrali I2C
+// global variable to count the number of overflows
+// global variable to count the number of overflows
+volatile uint8_t tot_overflow;
 
 
+int i = 0;
 
+// initialize timer, interrupt and variable
+void licznik1_init()
+{
+    // set up timer with prescaler = 256
+    TCCR1B |= (1 << CS12);
 
-//przenieœc to do inicjalizacji
-DDRA |= (1<<PA2);
-DDRA &= ~(1<<PA3);
+    // initialize counter
+    TCNT1 = 3036;		//wartoœc startowa, ¿eby opóŸnienie wynosi³o równo 2s
 
-PORTA |= (1<<PA2);
+    // enable overflow interrupt
+    TIMSK |= (1 << TOIE1);
 
+    // enable global interrupts
+    sei();
 
-
-
-
-while (1) {
-
-	ADCSRA |= (1 << ADSC);	//start konwersji
-				loop_until_bit_is_clear(ADCSRA, ADSC);
-				value = ADC;
-				sprintf(ADC_pomiar, "%d  ", value);
-
-		//		lcd_locate(0,0);
-		//		lcd_int(value);
-
-	//if (PINA & (1<<PA3)) {
-		//lcd_cls();
-		//lcd_locate(1, 0);
-		//lcd_str("connected");
-		//_delay_ms(200);
-
-	//} else if (!(PINA & (1<<PA3)))	{
-		//lcd_cls();
-		//lcd_locate(0,0);
-		//lcd_str("not");
-	//	lcd_locate(1,0);
-//		lcd_str("connected");
-		//_delay_ms(200);
-	//}
-	read_key();
-	if (menu_event) {
-		change_menu();
-	}
-
-	//lcd_char(stopien);
+    // initialize overflow counter variable
+    tot_overflow = 0;
 }
-return 0;
+
+// TIMER1 overflow interrupt service routine
+// called whenever TCNT1 overflows
+ISR(TIMER1_OVF_vect) {
+	// keep a track of number of overflows
+	tot_overflow++;
+
+	// check for number of overflows here itself
+	// 1 overflows = 2 seconds delay, wiêc docelowo ma byc 1800 bo co godzinê ma sprawdzac
+	if (tot_overflow >= 2) { // NOTE: '>=' used instead of '=='	wywo³ywanie przerwania co godzinê
+		check_hour();
+		if (godziny == 10) {//docelowo ma byc godzina 19
+			//PORTD |= (1<<PD2);
+			if (licznik_dni == watering_freq_temp) {
+				check_if_water();
+
+				if (poziom_wody_flaga == 1) {
+					watering();
+					// no timer reset required here as the timer
+					// is reset every time it overflows
+				} else {
+					//miganie czerwonej diody? dodac buzzer zamiast diody
+					PORTD |= (1 << PD0);
+					_delay_ms(1000);
+					PORTD &= (1 << PD0);
+				}
+				licznik_dni = 0;
+			} else {
+				licznik_dni++;
+			}
+		}
+		tot_overflow = 0;   // reset overflow counter
+
+	}
+}
+
+int main(void) {
+	lcd_init();
+
+	// initialize timer
+	licznik1_init();
+
+	//inicjalizacja ADC
+	ADCSRA = (1 << ADEN); 	//w³¹czenie przetwornika ADC
+	ADCSRA |= (1 << ADPS2) | (1 << ADPS1);	//ustawienie przeskalera na 64
+	ADMUX |= REF_256;//wybór napiêcia odniesienia z wczeœniej zdefiniowanych makr
+
+	i2cSetBitrate(100); // USTAWIAMY prêdkoœæ 100 kHz na magistrali I2C
+
+	//przenieœc to do inicjalizacji
+	DDRA |= (1 << PA2);
+	DDRA &= ~(1 << PA3);
+
+	PORTA |= (1 << PA2);
+
+	// loop forever
+	/**/while (1) {
+
+	 ADCSRA |= (1 << ADSC);	//start konwersji
+	 loop_until_bit_is_clear(ADCSRA, ADSC);
+	 value = ADC;
+	 sprintf(ADC_pomiar, "%d  ", value);
+
+	 //		lcd_locate(0,0);
+	 //		lcd_int(value);
+
+
+
+	 read_key();
+	 if (menu_event) {
+	 change_menu();
+	 }
+
+		 }
 }

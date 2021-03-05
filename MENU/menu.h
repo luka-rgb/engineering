@@ -21,6 +21,8 @@ extern volatile uint16_t value;
 extern volatile uint8_t key_lock;		// extern oznacza, ¿e zmienna jest zadeklarowana w innym pliku
 extern volatile uint8_t loop;
 extern volatile int loop_date;
+volatile uint8_t licznik_dni;
+volatile uint8_t poziom_wody_flaga;
 char  ADC_pomiar[17];
 volatile uint16_t value;
 
@@ -54,5 +56,7 @@ void if_bissextile(void);
 void show_date_time(void);
 void show_temp_hum(void);
 void read_key();
+void watering(void);
+void check_hour(void);
 
 #endif /* MENU_MENU_H_ */
