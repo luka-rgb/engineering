@@ -534,7 +534,7 @@ void lcd_init(void)
 		uint8_t tab4[] = { 4, 0, 31, 2, 4, 8, 31, 0 };		//¿
 		uint8_t tab5[] = { 0, 0, 14, 17, 31, 16, 14, 4 };	//ê
 		uint8_t tab6[] = { 2, 4, 22, 25, 17, 17, 17, 0 };	//ñ
-		uint8_t tab7[] = {};
+		uint8_t tab7[] = { 24, 8, 12, 24, 8, 8, 28, 0 };		//³
 
 		uint8_t tab8[] = { 6, 9, 9, 6, 0, 0, 0, 0 };		//stopnie celsjusza
 

@@ -33,8 +33,8 @@ uint8_t years_temp = 18;
 uint8_t bissextile;
 uint8_t humidity_temp = 40;			//okreslic mo¿liw¹ wartosc humidity
 uint8_t temperature_temp = 10;		//okreslic mozliw¹ wartosc temperature
-uint8_t lighting_on_temp;
-uint8_t lighting_off_temp;
+uint8_t lighting_on_temp = 12;
+uint8_t lighting_off_temp = 12;
 uint8_t watering_amount_temp;
 uint8_t watering_freq_temp = 1;
 uint8_t sekundy = 0, minuty, godziny, dni, miesiace, lata;
@@ -65,7 +65,7 @@ const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 				//  LP UP DN OK PREV
 				{ { 0, 0, 0, 1, 0 }, 			NULL					,	START1	,	START2	},
 				{ { 1, 1, 1, 2, 1 }, 			NULL					,	M_1_1	,	M_1_2	},
-				{ { 2, 2, 2, 3, 1 }, 			change_year				,	NULL	,	NULL	},
+				{ { 2, 2, 2, 3, 1 }, 			change_lighting				,	NULL	,	NULL	},
 				{ { 3, 3, 3, 4, 2 }, 			change_month			,	NULL	,	NULL	},
 				{ { 4, 4, 4, 5, 3 }, 			change_day				,	NULL	,	NULL	},
 				{ { 5, 5, 5, 6, 4 },			change_hour				,	NULL	,	NULL	},
@@ -73,19 +73,17 @@ const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 				{ { 7, 7, 7, 8, 6 }, 			save_date_time			,	M_1_3	,	M_1_4	},
 				{ { 8, 8, 8, 9, 7 }, 			show_date_time			,	NULL	,	NULL	},
 				{ { 9, 9, 9, 10, 8 }, 			NULL					,	M_2_1	,	M_2_2	},
-				{ { 10, 10, 10, 11, 9 }, 		change_temperature		,	NULL	,	NULL	},
+				{ { 10, 10, 10, 11, 9 }, 		show_temp_hum			,	NULL	,	NULL	},
 				{ { 11, 11, 11, 12, 10 }, 		change_humidity			,	NULL	,	NULL	},
-				{ { 12, 12, 12, 13, 11 },		show_temp_hum			,	NULL	,	NULL	},
-				{ { 13, 13, 13, 14, 12 },		check_if_water			,	NULL	,	NULL	},
-				{ { 14, 14, 14, 14, 13 },		check_water_level		,	NULL	,	NULL	},
+				{ { 12, 12, 12, 13, 11 },		change_temperature		,	NULL	,	NULL	},
+				{ { 13, 13, 13, 14, 12 },		change_lighting			,	NULL	,	NULL	},
+				{ { 14, 14, 14, 14, 13 },		check_water_level		,	NULL	,	NULL	},//inna funkcja do wstawienia
 
 				//{ { 8, 8, 8, 9, 7 }, 			show_date_time			,	NULL	,	NULL	},
 
 						/*
 				}
 				{ { 5, 5, 5, 6, 4 }, 			NULL					,	M_2_1	,	M_2_2	},
-				{ { 5, 5, 5, 6, 4 }, 			change_humidity			, 	NULL	, 	NULL	},
-				{ { 6, 6, 6, 7, 5 }, 			change_temperature		,	NULL	,	NULL	},
 				{ { 7, 7, 7, 8, 6 }, 			change_lighting			,	NULL	,	NULL	},
 				{ { 8, 8, 8, 9 , 7 }, 			change_watering_amount	,	NULL	,	NULL	},
 				{ { 9, 9, 9, 10 , 8 }, 			change_watering_freq	,	NULL	,	NULL	},
@@ -276,17 +274,15 @@ void change_year(void) {
 		if (years_temp < 100) {	//maksymalny rok dla DS1307 to 2100
 			years_temp += 1;
 		}
-
-		display_change_date();
 		lcd_cursor_off();
+		display_change_date();
 		break;
 	case E_DW:
 		if (years_temp > 0) {
 			years_temp--;
 		}
-
-		display_change_date();
 		lcd_cursor_off();
+		display_change_date();
 		break;
 	}
 }
@@ -421,12 +417,14 @@ void change_humidity(void) {
 		if (humidity_temp < 100) {
 			humidity_temp++;
 		}
+		lcd_cursor_off();
 		display_change_humidity();
 		break;
 	case E_DW:
 		if (humidity_temp > 30) {
 			humidity_temp--;
 		}
+		lcd_cursor_off();
 		display_change_humidity();
 		break;
 	}
@@ -436,17 +434,21 @@ void change_humidity(void) {
 void display_change_lighting(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
-	lcd_str("Lighting  on:off");
+	lcd_str("\x82" "wiat" "\x86" "o" " w" "\x86" ":" "wy" "\x86");
 
 	if (lighting_on_temp < 10) {
-		lcd_locate(1, 11);
+		lcd_locate(1, 9);
 		lcd_int(lighting_on_temp);
-	} else {
 		lcd_locate(1, 10);
-		lcd_int(lighting_on_temp);
-		lcd_locate(1, 12);
 		lcd_char(':');
-		lcd_locate(1, 13);
+		lcd_locate(1, 11);
+		lcd_int(lighting_off_temp);
+	} else {
+		lcd_locate(1, 8);
+		lcd_int(lighting_on_temp);
+		lcd_locate(1, 10);
+		lcd_char(':');
+		lcd_locate(1, 11);
 		lcd_int(lighting_off_temp);
 	}
 
@@ -454,17 +456,15 @@ void display_change_lighting(void) {
 
 void change_lighting(void) {
 	display_change_lighting();
-	lcd_locate(1, 11);
+	lcd_locate(1, 9);
 	lcd_cursor_on();
 	switch (menu_event) {
-	case E_OK:
-		loop = 0;
-		break;
 	case E_UP:
 		if (lighting_on_temp < 24) {
 			lighting_on_temp++;
 			lighting_off_temp--;
 		}
+		lcd_cursor_off();
 		display_change_lighting();
 		break;
 	case E_DW:
@@ -472,7 +472,9 @@ void change_lighting(void) {
 			lighting_on_temp--;
 			lighting_off_temp++;
 		}
+		lcd_cursor_off();
 		display_change_lighting();
+		break;
 	}
 }
 
@@ -499,7 +501,7 @@ void change_temperature(void) {
 		display_temperature();
 		break;
 	case E_DW:
-		if (temperature_temp > 20) {//czy da siê sch³odzic do 20 stopni przez nawiew?
+		if (temperature_temp > 20) {//jaki ustawic zakres mo¿liwy do ustawienia?
 			temperature_temp--;
 		}
 		display_temperature();

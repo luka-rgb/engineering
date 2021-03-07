@@ -116,8 +116,8 @@ int main(void) {
 
 	PORTA |= (1 << PA2);
 
-	// loop forever
-	/**/while (1) {
+
+	while (1) {
 
 	 ADCSRA |= (1 << ADSC);	//start konwersji
 	 loop_until_bit_is_clear(ADCSRA, ADSC);
