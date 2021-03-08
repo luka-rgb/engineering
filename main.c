@@ -35,6 +35,7 @@ volatile uint8_t key_lock;	//volatile oznacza, ¿e zmienna mo¿e byc zmieniona z z
 
 extern uint8_t watering_freq_temp;
 extern uint8_t godziny;
+extern uint8_t lighting_on_temp;
 
 // global variable to count the number of overflows
 // global variable to count the number of overflows
@@ -72,11 +73,10 @@ ISR(TIMER1_OVF_vect) {
 	// 1 overflows = 2 seconds delay, wiêc docelowo ma byc 1800 bo co godzinê ma sprawdzac
 	if (tot_overflow >= 2) { // NOTE: '>=' used instead of '=='	wywo³ywanie przerwania co godzinê
 		check_hour();
-		if (godziny == 10) {//docelowo ma byc godzina 19
+		if (godziny == 19) {		//podlewanie o 19
 			//PORTD |= (1<<PD2);
 			if (licznik_dni == watering_freq_temp) {
 				check_if_water();
-
 				if (poziom_wody_flaga == 1) {
 					watering();
 					// no timer reset required here as the timer
@@ -85,12 +85,18 @@ ISR(TIMER1_OVF_vect) {
 					//miganie czerwonej diody? dodac buzzer zamiast diody
 					PORTD |= (1 << PD0);
 					_delay_ms(1000);
-					PORTD &= (1 << PD0);
+					PORTD &= ~(1 << PD0);
 				}
 				licznik_dni = 0;
 			} else {
 				licznik_dni++;
 			}
+		} else if (godziny == 10) {
+
+			PORTD |= (1 << PD3);
+		} else if (godziny == (7 + lighting_on_temp)) {
+
+			PORTD &= ~(1 << PD3);
 		}
 		tot_overflow = 0;   // reset overflow counter
 

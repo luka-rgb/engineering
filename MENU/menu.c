@@ -26,7 +26,7 @@ uint8_t bufor[7];
 //zamiast zmiennych poni¿ej zrobic struct??
 uint8_t seconds_temp = 0;
 uint8_t minutes_temp = 30;
-uint8_t hours_temp;
+uint8_t hours_temp = 10;
 uint8_t days_temp = 16;
 uint8_t months_temp = 6;
 uint8_t years_temp = 18;
@@ -65,7 +65,7 @@ const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 				//  LP UP DN OK PREV
 				{ { 0, 0, 0, 1, 0 }, 			NULL					,	START1	,	START2	},
 				{ { 1, 1, 1, 2, 1 }, 			NULL					,	M_1_1	,	M_1_2	},
-				{ { 2, 2, 2, 3, 1 }, 			change_lighting				,	NULL	,	NULL	},
+				{ { 2, 2, 2, 3, 1 }, 			change_year				,	NULL	,	NULL	},
 				{ { 3, 3, 3, 4, 2 }, 			change_month			,	NULL	,	NULL	},
 				{ { 4, 4, 4, 5, 3 }, 			change_day				,	NULL	,	NULL	},
 				{ { 5, 5, 5, 6, 4 },			change_hour				,	NULL	,	NULL	},
@@ -77,16 +77,14 @@ const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 				{ { 11, 11, 11, 12, 10 }, 		change_humidity			,	NULL	,	NULL	},
 				{ { 12, 12, 12, 13, 11 },		change_temperature		,	NULL	,	NULL	},
 				{ { 13, 13, 13, 14, 12 },		change_lighting			,	NULL	,	NULL	},
-				{ { 14, 14, 14, 14, 13 },		check_water_level		,	NULL	,	NULL	},//inna funkcja do wstawienia
+				{ { 14, 14, 14, 14, 13 },		change_watering_freq	,	NULL	,	NULL	},				//wstawic przed czêstotliwosci¹ funkcje z ilosci¹ wody
+
 
 				//{ { 8, 8, 8, 9, 7 }, 			show_date_time			,	NULL	,	NULL	},
 
 						/*
-				}
-				{ { 5, 5, 5, 6, 4 }, 			NULL					,	M_2_1	,	M_2_2	},
-				{ { 7, 7, 7, 8, 6 }, 			change_lighting			,	NULL	,	NULL	},
+
 				{ { 8, 8, 8, 9 , 7 }, 			change_watering_amount	,	NULL	,	NULL	},
-				{ { 9, 9, 9, 10 , 8 }, 			change_watering_freq	,	NULL	,	NULL	},
 				{ { 10, 10, 10, 11, 9 }, 		NULL					,	M_3_1	,	NULL	},
 				{ { 11, 11, 11, 12, 9 },		save					,	NULL	,	NULL	},	//zapisz, dodac pozosta³e parametry, jak zrobic ¿eby zapisa³o i od razu przechodzi³o do kolejnego menu?
 				{ { 12, 12, 12, 12, 12 }, 		NULL					,	M_4_1	,	NULL	},	//domyslne menu???
