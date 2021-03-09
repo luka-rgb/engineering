@@ -39,7 +39,7 @@ uint8_t watering_amount_temp;
 uint8_t watering_freq_temp = 1;
 uint8_t sekundy = 0, minuty, godziny, dni, miesiace, lata;
 
-uint8_t water_level_flag;
+
 
 const char START1[] PROGMEM = { "Wci" "\x82" "nij ok" };
 const char START2[] PROGMEM = { "\x83" "eby" " zacz" "\x80" "\x81" };
@@ -67,7 +67,7 @@ const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 				//  LP UP DN OK PREV
 				{ { 0, 0, 0, 1, 0 }, 			NULL					,	START1	,	START2	},
 				{ { 1, 1, 1, 2, 1 }, 			NULL					,	M_1_1	,	M_1_2	},
-				{ { 2, 2, 2, 3, 1 }, 			check_water_level				,	NULL	,	NULL	},
+				{ { 2, 2, 2, 3, 1 }, 			change_year				,	NULL	,	NULL	},
 				{ { 3, 3, 3, 4, 2 }, 			change_month			,	NULL	,	NULL	},
 				{ { 4, 4, 4, 5, 3 }, 			change_day				,	NULL	,	NULL	},
 				{ { 5, 5, 5, 6, 4 },			change_hour				,	NULL	,	NULL	},
@@ -559,6 +559,7 @@ void change_hour(void) {
 }
 
 void read_key(void) {
+
 	if (((value >= 1021) && (value <= 1023)) && (!key_lock)) {
 		menu_event = E_UP;
 		key_lock = 1;

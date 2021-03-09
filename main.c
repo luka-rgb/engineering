@@ -125,15 +125,15 @@ int main(void) {
 
 	while (1) {
 
-	 ADCSRA |= (1 << ADSC);	//start konwersji
-	 loop_until_bit_is_clear(ADCSRA, ADSC);
-	 value = ADC;
-	 sprintf(ADC_pomiar, "%d  ", value);
+
 
 //czy da siê przeniesc start konwersji i resztê do funkcji read_key?
 	 //		lcd_locate(0,0);
 	 //		lcd_int(value);
-
+		 ADCSRA |= (1 << ADSC);	//start konwersji
+		 loop_until_bit_is_clear(ADCSRA, ADSC);
+		 value = ADC;
+		 sprintf(ADC_pomiar, "%d  ", value);
 
 
 	 read_key();
