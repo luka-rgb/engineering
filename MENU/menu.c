@@ -39,6 +39,8 @@ uint8_t watering_amount_temp;
 uint8_t watering_freq_temp = 1;
 uint8_t sekundy = 0, minuty, godziny, dni, miesiace, lata;
 
+uint8_t water_level_flag;
+
 const char START1[] PROGMEM = { "Wci" "\x82" "nij ok" };
 const char START2[] PROGMEM = { "\x83" "eby" " zacz" "\x80" "\x81" };
 const char M_1_1[] PROGMEM = { "Ustaw" };
@@ -65,7 +67,7 @@ const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 				//  LP UP DN OK PREV
 				{ { 0, 0, 0, 1, 0 }, 			NULL					,	START1	,	START2	},
 				{ { 1, 1, 1, 2, 1 }, 			NULL					,	M_1_1	,	M_1_2	},
-				{ { 2, 2, 2, 3, 1 }, 			change_year				,	NULL	,	NULL	},
+				{ { 2, 2, 2, 3, 1 }, 			check_water_level				,	NULL	,	NULL	},
 				{ { 3, 3, 3, 4, 2 }, 			change_month			,	NULL	,	NULL	},
 				{ { 4, 4, 4, 5, 3 }, 			change_day				,	NULL	,	NULL	},
 				{ { 5, 5, 5, 6, 4 },			change_hour				,	NULL	,	NULL	},
@@ -77,7 +79,8 @@ const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 				{ { 11, 11, 11, 12, 10 }, 		change_humidity			,	NULL	,	NULL	},
 				{ { 12, 12, 12, 13, 11 },		change_temperature		,	NULL	,	NULL	},
 				{ { 13, 13, 13, 14, 12 },		change_lighting			,	NULL	,	NULL	},
-				{ { 14, 14, 14, 14, 13 },		change_watering_freq	,	NULL	,	NULL	},				//wstawic przed czêstotliwosci¹ funkcje z ilosci¹ wody
+				{ { 14, 14, 14, 15, 13 },		change_watering_amount	,	NULL	,	NULL	},				//zmodyfikowac
+				{ { 15, 15, 15, 15, 14 },		change_watering_freq	,	NULL	,	NULL	},
 
 
 				//{ { 8, 8, 8, 9, 7 }, 			show_date_time			,	NULL	,	NULL	},
@@ -285,20 +288,23 @@ void change_year(void) {
 	}
 }
 
-void check_water_level(void) {	//dodac zmienn¹ zamiast wyœwietlania wartoœci na wyœwietlaczu, napisac if je¿eli nie ma wody - czerwona dioda ma zaswiecic
+void check_water_level(void) {//dodac zmienn¹ zamiast wyœwietlania wartoœci na wyœwietlaczu, napisac if je¿eli nie ma wody - czerwona dioda ma zaswiecic
 	ADCSRA = (1 << ADEN); 					//w³¹czenie przetwornika ADC
-	ADCSRA |= (1 << ADPS2) | (1 << ADPS1);	//ustawienie przeskalera na 64
-	ADMUX |= (1 << REFS0);					//wybór napiêcia odniesienia z wczeœniej zdefiniowanych makr
-	ADMUX |= 1; 							//wybór u¿ywanego pinu ADC, domyœlanie u¿ywany jest PA0
+	ADCSRA |= (1 << ADPS2) | (1 << ADPS1);	//ustawienie przeskalera na 8
+	ADMUX |= (1 << REFS0);//wybór napiêcia odniesienia z wczeœniej zdefiniowanych makr, W TYM PRZYPADKU vcc
+	ADMUX |= 1; 		//wybór u¿ywanego pinu ADC, domyœlanie u¿ywany jest PA0
 
 	ADCSRA |= (1 << ADSC);	//start konwersji
 	loop_until_bit_is_clear(ADCSRA, ADSC);
 	value = ADC;
 	sprintf(ADC_pomiar, "%d  ", value);
 
-	lcd_locate(0, 0);
-	lcd_int(value);
+	if (value < 900) {	//nie ma wody
 
+		water_level_flag = 0;
+	} else {
+		water_level_flag = 1;
+	}
 }
 
 void check_if_water(void) {	//sprawdzic dzia³anie
@@ -317,18 +323,11 @@ void check_if_water(void) {	//sprawdzic dzia³anie
 void display_watering_amount(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
-	lcd_str("Water amount");
-	if (watering_amount_temp < 100) {
-		lcd_locate(1, 3);
-		lcd_int(watering_amount_temp);
-		lcd_locate(1, 6);
-		lcd_str("ml");
-	} else if (watering_amount_temp > 90) {
-		lcd_locate(1, 2);
-		lcd_int(watering_amount_temp);
-		lcd_locate(1, 6);
-		lcd_str("ml");
-	}
+	lcd_str("Ilo" "\x82" "\x83" " wody");
+	lcd_locate(1, 2);
+	lcd_int(watering_amount_temp);
+	lcd_locate(1, 6);
+	lcd_str("ml");
 
 }
 
@@ -339,16 +338,18 @@ void change_watering_amount(void) {//jak okreslic ilosc wody
 	read_key();
 	switch (menu_event) {
 	case E_UP:
-		if (watering_amount_temp < 500) {
-			watering_amount_temp += 10;
+		if (watering_amount_temp <= 100) {
+			watering_amount_temp += 100;
 		}
+		lcd_cursor_off();
 		display_watering_amount();
 		break;
 	case E_DW:
-		if (watering_amount_temp > 0) {
-			watering_amount_temp -= 10;
+		if (watering_amount_temp >= 200) {
+			watering_amount_temp -= 100;
 		}
-		display_watering_amount();//sprawdzic czy dobre nazwy wszedzie w caseach s¹
+		lcd_cursor_off();
+		display_watering_amount();
 		break;
 	}
 }
@@ -360,6 +361,7 @@ void display_watering_freq(void) {//dodac warunki na ró¿ne rzêdy wielkoœci dla k
 	lcd_str("Podlewanie co");
 	if (watering_freq_temp < 2) {
 		lcd_locate(1, 1);
+		//lcd_cursor_on();
 		lcd_int(watering_freq_temp);
 		lcd_locate(1, 4);
 		lcd_str("dzie" "\x85");
@@ -662,14 +664,20 @@ void show_date_time(void) {
 
 }
 
-void watering(void) {//powi¹zac to z ustawianiem ilosci podlewania w menu
-	PORTD |= (1<<PD2);
-	_delay_ms(500);
-	PORTD &= ~(1<<PD2);
+void watering(void) {		//zmienic czasy, które dobrac eksperymentalnie
+	if (watering_amount_temp == 100) {
+		PORTD |= (1 << PD2);
+		_delay_ms(1000);
+		PORTD &= ~(1 << PD2);
+	} else if (watering_amount_temp == 200) {
+		PORTD |= (1 << PD2);
+		_delay_ms(2000);
+		PORTD &= ~(1 << PD2);
+	}
 
 }
 
-void check_hour(void) {
+void check_hour(void) {//czy to dzia³a, sprawdzic po up³ywie czasu
 	I2C_READ_BUFFER( DS1307_ADDR, 0x00, 7, bufor);
 	godziny = bcd2dec(bufor[2]);
 }

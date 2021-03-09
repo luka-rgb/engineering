@@ -71,7 +71,7 @@ ISR(TIMER1_OVF_vect) {
 
 	// check for number of overflows here itself
 	// 1 overflows = 2 seconds delay, wiêc docelowo ma byc 1800 bo co godzinê ma sprawdzac
-	if (tot_overflow >= 2) { // NOTE: '>=' used instead of '=='	wywo³ywanie przerwania co godzinê
+	if (tot_overflow >= 1800) { // NOTE: '>=' used instead of '=='	wywo³ywanie przerwania co godzinê
 		check_hour();
 		if (godziny == 19) {		//podlewanie o 19
 			//PORTD |= (1<<PD2);
@@ -130,6 +130,7 @@ int main(void) {
 	 value = ADC;
 	 sprintf(ADC_pomiar, "%d  ", value);
 
+//czy da siê przeniesc start konwersji i resztê do funkcji read_key?
 	 //		lcd_locate(0,0);
 	 //		lcd_int(value);
 

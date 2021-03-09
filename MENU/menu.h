@@ -23,6 +23,7 @@ extern volatile uint8_t loop;
 extern volatile int loop_date;
 volatile uint8_t licznik_dni;
 volatile uint8_t poziom_wody_flaga;
+volatile uint8_t water_level_flag;
 char  ADC_pomiar[17];
 volatile uint16_t value;
 

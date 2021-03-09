@@ -215,8 +215,12 @@ void reg_temp(void) {
 		PORTD |= AIR;
 		PORTD &= ~FOG;
 	} else if (hum_lower == 1) {
-		PORTD |= FOG;
 		PORTD &= ~AIR;
+		if (water_level_flag == 1) {
+			PORTD |= FOG;
+
+		}
+
 	}
 
 }
