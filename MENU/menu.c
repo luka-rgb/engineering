@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <util/delay.h>
+#include <avr/eeprom.h>
 
 #include "../I2C/I2C.h"
 #include "menu.h"
@@ -18,8 +19,9 @@
 volatile uint8_t current_menu = 0;		//pocz¹tkowy stan menu
 volatile uint8_t menu_event = E_IDDLE;	//???
 volatile uint8_t loop = 0;
-char  ADC_pomiar[17];
+char ADC_pomiar_poziom[17];
 volatile uint16_t value;
+volatile uint8_t water_level;
 
 
 uint8_t bufor[7];
@@ -87,7 +89,6 @@ const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 
 						/*
 
-				{ { 8, 8, 8, 9 , 7 }, 			change_watering_amount	,	NULL	,	NULL	},
 				{ { 10, 10, 10, 11, 9 }, 		NULL					,	M_3_1	,	NULL	},
 				{ { 11, 11, 11, 12, 9 },		save					,	NULL	,	NULL	},	//zapisz, dodac pozosta³e parametry, jak zrobic ¿eby zapisa³o i od razu przechodzi³o do kolejnego menu?
 				{ { 12, 12, 12, 12, 12 }, 		NULL					,	M_4_1	,	NULL	},	//domyslne menu???
@@ -124,34 +125,39 @@ void change_menu() {
 	}
 }
 
+
 void display_change_time(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
 	lcd_str("Godzina - GG/MM");
-	if (hours_temp > 9) {
-		lcd_locate(1, 0);
-		lcd_int(hours_temp);
-	} else {
-		lcd_locate(1, 1);
-		lcd_int(hours_temp);
-	}
+	printTime(1,0,hours_temp);
 	lcd_locate(1, 2);
 	lcd_char(':');
-	if (minutes_temp > 9) {
-		lcd_locate(1, 3);
-		lcd_int(minutes_temp);
+	printTime(1,3,minutes_temp);
+}
+
+void printTime(uint8_t y, uint8_t x, uint8_t time) {
+	if (time > 9) {
+		printInt(y,x,time);
 	} else {
-		lcd_locate(1, 4);
-		lcd_int(minutes_temp);
+		printInt(y,x+1,time);
 	}
 }
 
-void if_bissextile(void) {
-	if ((years_temp % 4 == 0 && years_temp % 100 != 0) || years_temp % 400 == 0)
-		bissextile = 1;
-	else
-		bissextile = 0;
+void printInt(uint8_t y, uint8_t x, uint8_t hours) {
+	lcd_locate(y, x);
+	lcd_int(hours);
 }
+
+void if_bissextile(void) {
+	if ((years_temp % 4 == 0 && years_temp % 100 != 0) || years_temp % 400 == 0) {
+		bissextile = 1;
+	} else {
+		bissextile = 0;
+	}
+
+}
+
 
 void display_change_date(void) {
 	lcd_cls();
@@ -289,18 +295,18 @@ void change_year(void) {
 }
 
 void check_water_level(void) {//dodac zmienn¹ zamiast wyœwietlania wartoœci na wyœwietlaczu, napisac if je¿eli nie ma wody - czerwona dioda ma zaswiecic
-	ADCSRA = (1 << ADEN); 					//w³¹czenie przetwornika ADC
+	//ADCSRA = (1 << ADEN); 					//w³¹czenie przetwornika ADC
 	ADCSRA |= (1 << ADPS2) | (1 << ADPS1);	//ustawienie przeskalera na 8
 	ADMUX |= (1 << REFS0);//wybór napiêcia odniesienia z wczeœniej zdefiniowanych makr, W TYM PRZYPADKU vcc
 	ADMUX |= 1; 		//wybór u¿ywanego pinu ADC, domyœlanie u¿ywany jest PA0
 
 	ADCSRA |= (1 << ADSC);	//start konwersji
 	loop_until_bit_is_clear(ADCSRA, ADSC);
-	value = ADC;
-	sprintf(ADC_pomiar, "%d  ", value);
+	water_level = ADC;
+	sprintf(ADC_pomiar_poziom, "%d  ", water_level);
 
-	if (value < 900) {	//nie ma wody
-
+	printInt(1, 0, water_level);
+	if (water_level < 240) {	//mniej wiêcej 1/4 wysokoœci zanurzona w wodzie
 		water_level_flag = 0;
 	} else {
 		water_level_flag = 1;

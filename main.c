@@ -5,13 +5,13 @@
  *      Author: lukas
  */
 
-
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 #include <stdio.h>
+#include <avr/eeprom.h>
 
 #include "LCD/lcd44780.h"
 #include "MENU/menu.h"
@@ -21,17 +21,11 @@
 #define REF_256 (1<<REFS1)|(1<<REFS0)	//makro na napiêcie odniesienia wewnêtrzne 2,56
 #define REF_VCC (1<<REFS0)		//makro na napiêcie odniesienia VCC
 
-
-
-//uint8_t sekundy = 0, minuty, godziny, dni, miesiace;
-//uint16_t lata;
 uint8_t bufor[7];
 
-
-char  ADC_pomiar[17];
+char ADC_pomiar[17];
 volatile uint16_t value;
-volatile uint8_t key_lock;	//volatile oznacza, ¿e zmienna mo¿e byc zmieniona z zewn¹trz
-
+volatile uint8_t key_lock;//volatile oznacza, ¿e zmienna mo¿e byc zmieniona z zewn¹trz
 
 extern uint8_t watering_freq_temp;
 extern uint8_t godziny;
@@ -41,26 +35,24 @@ extern uint8_t lighting_on_temp;
 // global variable to count the number of overflows
 volatile uint8_t tot_overflow;
 
-
 int i = 0;
 
 // initialize timer, interrupt and variable
-void licznik1_init()
-{
-    // set up timer with prescaler = 256
-    TCCR1B |= (1 << CS12);
+void licznik1_init() {
+	// set up timer with prescaler = 256
+	TCCR1B |= (1 << CS12);
 
-    // initialize counter
-    TCNT1 = 3036;		//wartoœc startowa, ¿eby opóŸnienie wynosi³o równo 2s
+	// initialize counter
+	TCNT1 = 3036;		//wartoœc startowa, ¿eby opóŸnienie wynosi³o równo 2s
 
-    // enable overflow interrupt
-    TIMSK |= (1 << TOIE1);
+	// enable overflow interrupt
+	TIMSK |= (1 << TOIE1);
 
-    // enable global interrupts
-    sei();
+	// enable global interrupts
+	sei();
 
-    // initialize overflow counter variable
-    tot_overflow = 0;
+	// initialize overflow counter variable
+	tot_overflow = 0;
 }
 
 // TIMER1 overflow interrupt service routine
@@ -91,19 +83,36 @@ ISR(TIMER1_OVF_vect) {
 			} else {
 				licznik_dni++;
 			}
-		} else if (godziny == 10) {
+		} else if (godziny == 7) {
 
-			PORTD |= (1 << PD3);
+			PORTD |= (1 << PD3);	//start cyklu oœwietlenia
 		} else if (godziny == (7 + lighting_on_temp)) {
 
-			PORTD &= ~(1 << PD3);
+			PORTD &= ~(1 << PD3);	//zakoñczenie cyklu oœwietlenia
 		}
 		tot_overflow = 0;   // reset overflow counter
 
 	}
 }
+uint8_t ByteOfData ;
+unsigned int R_array[15],W_array[15];	//zmienic na tyle miejsc ile potrzebuje parametrów
 
 int main(void) {
+	lcd_init();
+
+	//eeprom_write_word(&W_array[0], 12);
+
+	R_array[0] = eeprom_read_word(&W_array[0]);
+
+
+		lcd_locate(0,0);
+		lcd_int(R_array[0]);		/* Print Read_array on LCD */
+
+	while (1) {
+
+	}
+}
+/*int main(void) {
 	lcd_init();
 
 	// initialize timer
@@ -122,24 +131,20 @@ int main(void) {
 
 	PORTA |= (1 << PA2);
 
-
 	while (1) {
 
-
-
 //czy da siê przeniesc start konwersji i resztê do funkcji read_key?
-	 //		lcd_locate(0,0);
-	 //		lcd_int(value);
-		 ADCSRA |= (1 << ADSC);	//start konwersji
-		 loop_until_bit_is_clear(ADCSRA, ADSC);
-		 value = ADC;
-		 sprintf(ADC_pomiar, "%d  ", value);
+		//		lcd_locate(0,0);
+		//		lcd_int(value);
+		ADCSRA |= (1 << ADSC);	//start konwersji
+		loop_until_bit_is_clear(ADCSRA, ADSC);
+		value = ADC;		//ADC to makro
+		sprintf(ADC_pomiar, "%d  ", value);		//zamiana na system dziesiêtny
 
+		read_key();
+		if (menu_event) {
+			change_menu();
+		}
 
-	 read_key();
-	 if (menu_event) {
-	 change_menu();
-	 }
-
-		 }
-}
+	}
+}*/
