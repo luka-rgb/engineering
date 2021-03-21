@@ -23,23 +23,24 @@ char ADC_pomiar_poziom[17];
 volatile uint16_t value;
 volatile uint8_t water_level;
 
+extern unsigned int program_array[6];
 
 uint8_t bufor[7];
-//zamiast zmiennych poni¿ej zrobic struct??
-uint8_t seconds_temp = 0;
-uint8_t minutes_temp = 30;
-uint8_t hours_temp = 10;
-uint8_t days_temp = 16;
-uint8_t months_temp = 6;
-uint8_t years_temp = 18;
+uint8_t program_saved = 0;
+uint8_t seconds = 0;
+uint8_t minutes = 30;
+uint8_t hours = 10;
+uint8_t days = 16;
+uint8_t months = 6;
+uint8_t years = 18;
 uint8_t bissextile;
 uint8_t humidity_temp = 40;			//okreslic mo¿liw¹ wartosc humidity
 uint8_t temperature_temp = 10;		//okreslic mozliw¹ wartosc temperature
-uint8_t lighting_on_temp = 12;
-uint8_t lighting_off_temp = 12;
-uint8_t watering_amount_temp;
-uint8_t watering_freq_temp = 1;
-uint8_t sekundy = 0, minuty, godziny, dni, miesiace, lata;
+uint8_t lighting_on = 12;
+uint8_t lighting_off = 12;
+uint8_t watering_amount;
+uint8_t watering_freq = 2;
+uint8_t sekundy = 0, minuty, godziny, dni, miesiace, lata;		//sprawdzic ró¿nicê w programie miêdzy seconds, a sekundy itd.
 
 
 
@@ -78,10 +79,10 @@ const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 				{ { 8, 8, 8, 9, 7 }, 			show_date_time			,	NULL	,	NULL	},
 				{ { 9, 9, 9, 10, 8 }, 			NULL					,	M_2_1	,	M_2_2	},
 				{ { 10, 10, 10, 11, 9 }, 		show_temp_hum			,	NULL	,	NULL	},
-				{ { 11, 11, 11, 12, 10 }, 		change_humidity			,	NULL	,	NULL	},
-				{ { 12, 12, 12, 13, 11 },		change_temperature		,	NULL	,	NULL	},
+				{ { 11, 11, 11, 12, 10 }, 		change_temperature		,	NULL	,	NULL	},
+				{ { 12, 12, 12, 13, 11 },		change_humidity			,	NULL	,	NULL	},
 				{ { 13, 13, 13, 14, 12 },		change_lighting			,	NULL	,	NULL	},
-				{ { 14, 14, 14, 15, 13 },		change_watering_amount	,	NULL	,	NULL	},				//zmodyfikowac
+				{ { 14, 14, 14, 15, 13 },		change_watering_amount	,	NULL	,	NULL	},
 				{ { 15, 15, 15, 15, 14 },		change_watering_freq	,	NULL	,	NULL	},
 
 
@@ -125,85 +126,198 @@ void change_menu() {
 	}
 }
 
+void read_key(void) {
 
-void display_change_time(void) {
-	lcd_cls();
-	lcd_locate(0, 0);
-	lcd_str("Godzina - GG/MM");
-	printTime(1,0,hours_temp);
-	lcd_locate(1, 2);
-	lcd_char(':');
-	printTime(1,3,minutes_temp);
-}
-
-void printTime(uint8_t y, uint8_t x, uint8_t time) {
-	if (time > 9) {
-		printInt(y,x,time);
-	} else {
-		printInt(y,x+1,time);
+	if (((value >= 1021) && (value <= 1023)) && (!key_lock)) {
+		menu_event = E_UP;
+		key_lock = 1;
+	} else if ((value > 900) && (value <= 1020) && (!key_lock)) {
+		menu_event = E_DW;
+		key_lock = 1;
+	} else if ((value > 590) && (value <= 690) && (!key_lock)) {
+		menu_event = E_OK;
+		key_lock = 1;
+	} else if ((value > 420) && (value <= 520) && (!key_lock)) { //naciœniêty S4
+		menu_event = E_PREV;
+		key_lock = 1;
+	} else if (((value < 100) && key_lock)) { //¿aden przycisk nie jest naciœniêty
+		key_lock = 0;
+		menu_event = E_IDDLE;
 	}
 }
-
-void printInt(uint8_t y, uint8_t x, uint8_t hours) {
-	lcd_locate(y, x);
-	lcd_int(hours);
-}
-
-void if_bissextile(void) {
-	if ((years_temp % 4 == 0 && years_temp % 100 != 0) || years_temp % 400 == 0) {
-		bissextile = 1;
-	} else {
-		bissextile = 0;
-	}
-
-}
-
 
 void display_change_date(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
 	lcd_str("Data");
-	if (days_temp < 10) {
+	if (days < 10) {
 		lcd_locate(1, 0);
 		lcd_int(0);
 		lcd_locate(1, 1);
-		lcd_int(days_temp);
+		lcd_int(days);
 	} else {
 		lcd_locate(1, 0);
-		lcd_int(days_temp);
+		lcd_int(days);
 	}
 	lcd_locate(1, 2);
 	lcd_char('.');
-	if (months_temp < 10) {
+	if (months < 10) {
 		lcd_locate(1, 3);
 		lcd_int(0);
 		lcd_locate(1, 4);
-		lcd_int(months_temp);
+		lcd_int(months);
 	} else {
 		lcd_locate(1, 3);
-		lcd_int(months_temp);
+		lcd_int(months);
 	}
-	if(years_temp < 10) {
+	if(years < 10) {
 		lcd_locate(1, 5);
 			lcd_char('.');
 		lcd_locate(1,6);
 		lcd_str("200");
 		lcd_locate(1,9);
-		lcd_int(years_temp);
-	} else if(years_temp < 100) {
+		lcd_int(years);
+	} else if(years < 100) {
 		lcd_locate(1, 5);
 			lcd_char('.');
 		lcd_locate(1,6);
 		lcd_str("20");
 		lcd_locate(1,8);
-		lcd_int(years_temp);
+		lcd_int(years);
 	} else {
 		lcd_locate(1, 5);
 			lcd_char('.');
 		lcd_locate(1,6);
 		lcd_str("2");
 		lcd_locate(1,7);
-		lcd_int(years_temp);
+		lcd_int(years);
+	}
+}
+
+void display_change_time(void) {
+	lcd_cls();
+	lcd_locate(0, 0);
+	lcd_str("Godzina - GG/MM");
+	printTime(1,0,hours);
+	lcd_locate(1, 2);
+	lcd_char(':');
+	printTime(1,3,minutes);
+}
+
+void display_temperature(void) {
+	lcd_cls();
+	lcd_locate(0, 0);
+	lcd_str("Temperatura");
+	lcd_locate(1, 2);
+	lcd_int(temperature_temp);
+	lcd_locate(1, 4);
+	lcd_str("\x87" "C");
+}
+
+void display_change_humidity(void) {
+	lcd_cls();
+	lcd_locate(0, 0);
+	lcd_str("Wilgotno" "\x82" "\x81");
+	lcd_locate(1, 0);
+	lcd_int(humidity_temp);
+	lcd_locate(1, 2);
+	lcd_str("%RH");
+}
+
+void display_change_lighting(void) {
+	lcd_cls();
+	lcd_locate(0, 0);
+	lcd_str("\x82" "wiat" "\x86" "o" " w" "\x86" ":" "wy" "\x86");
+
+	if (lighting_on < 10) {
+		lcd_locate(1, 9);
+		lcd_int(lighting_on);
+		lcd_locate(1, 10);
+		lcd_char(':');
+		lcd_locate(1, 11);
+		lcd_int(lighting_off);
+	} else {
+		lcd_locate(1, 8);
+		lcd_int(lighting_on);
+		lcd_locate(1, 10);
+		lcd_char(':');
+		lcd_locate(1, 11);
+		lcd_int(lighting_off);
+	}
+}
+
+void display_watering_amount(void) {
+	lcd_cls();
+	lcd_locate(0, 0);
+	lcd_str("Ilo" "\x82" "\x83" " wody");
+	lcd_locate(1, 2);
+	lcd_int(watering_amount);
+	lcd_locate(1, 6);
+	lcd_str("ml");
+}
+
+void display_watering_freq(void) {//dodac warunki na ró¿ne rzêdy wielkoœci dla kursora? dokoñczyc przerabianie funkcji
+	lcd_cls();
+	lcd_locate(0, 0);
+	lcd_str("Podlewanie co");
+	if (watering_freq < 2) {
+		lcd_locate(1, 1);
+		//lcd_cursor_on();
+		lcd_int(watering_freq);
+		lcd_locate(1, 4);
+		lcd_str("dzie" "\x85");
+	} else if (watering_freq > 1) {
+		lcd_locate(1, 1);
+		lcd_int(watering_freq);
+		lcd_locate(1, 4);
+		lcd_str("dni");
+	}
+}
+
+void change_year(void) {
+	display_change_date();
+	lcd_cursor_on();
+	lcd_locate(1, 9);
+	read_key();
+	switch (menu_event) {
+	case E_UP:
+		if (years < 100) {	//maksymalny rok dla DS1307 to 2100
+			years += 1;
+		}
+		lcd_cursor_off();
+		display_change_date();
+		break;
+	case E_DW:
+		if (years > 0) {
+			years--;
+		}
+		lcd_cursor_off();
+		display_change_date();
+		break;
+	}
+}
+
+void change_month(void) {
+	display_change_date();
+	lcd_locate(1, 4);
+	lcd_cursor_on();
+	read_key();
+	switch (menu_event) {
+	case E_UP:
+		if (months < 12) {
+			months++;
+		}
+		display_change_date();
+		lcd_cursor_off();
+		break;
+	case E_DW:
+		if (months > 1) {
+			months--;
+		}
+
+		display_change_date();
+		lcd_cursor_off();
+		break;
 	}
 }
 
@@ -215,83 +329,266 @@ void change_day(void) {
 	read_key();
 	switch (menu_event) {
 	case E_UP:
-		if ( (bissextile == 1) && (months_temp == 2) ) {
-			if (days_temp < 29) {
-				days_temp++;
+		if ( (bissextile == 1) && (months == 2) ) {
+			if (days < 29) {
+				days++;
 			}
-		} else if ((bissextile == 0) && (months_temp == 2)) {
-			if (days_temp < 28) {
-				days_temp++;
+		} else if ((bissextile == 0) && (months == 2)) {
+			if (days < 28) {
+				days++;
 			}
-		} else if ( (months_temp == 4) || (months_temp == 6) || (months_temp == 9) || (months_temp == 11) ) {
-			if (days_temp < 30) {
-				days_temp++;
+		} else if ( (months == 4) || (months == 6) || (months == 9) || (months == 11) ) {
+			if (days < 30) {
+				days++;
 			}
-		} else if ( (months_temp == 1) || (months_temp == 3) || (months_temp == 5) || (months_temp == 7) || (months_temp == 8) || (months_temp == 10) || (months_temp == 12) ) {
-			if (days_temp < 31) {
-				days_temp++;
+		} else if ( (months == 1) || (months == 3) || (months == 5) || (months == 7) || (months == 8) || (months == 10) || (months == 12) ) {
+			if (days < 31) {
+				days++;
 			}
 		}
 		display_change_date();
 		lcd_cursor_off();
 		break;
 	case E_DW:
-		if (days_temp > 1) {
-			days_temp--;
+		if (days > 1) {
+			days--;
 		}
 
 		display_change_date();
 		lcd_cursor_off();
 		break;
 	}
-
 }
 
-void change_month(void) {
-	display_change_date();
+void if_bissextile(void) {
+	if ((years % 4 == 0 && years % 100 != 0) || years % 400 == 0) {
+		bissextile = 1;
+	} else {
+		bissextile = 0;
+	}
+}
+
+void change_hour(void) {
+	display_change_time();
+	lcd_locate(1, 1);
+	lcd_cursor_on();
+	read_key();
+	switch (menu_event) {
+	case E_UP:
+		hours++;
+		if (hours > 23) {
+			hours = 0;
+		}
+		display_change_time();
+		break;
+	case E_DW:
+		hours--;
+		if (hours < 0 || hours > 24) {
+			hours = 23;
+		}
+		display_change_time();
+		break;
+
+	}
+}
+
+void change_minute(void) {
+	display_change_time();
 	lcd_locate(1, 4);
 	lcd_cursor_on();
 	read_key();
 	switch (menu_event) {
 	case E_UP:
-		if (months_temp < 12) {
-			months_temp++;
+		minutes++;
+
+		if (minutes > 59) {
+			minutes = 0;
 		}
-		display_change_date();
-		lcd_cursor_off();
+		display_change_time();
+
 		break;
 	case E_DW:
-		if (months_temp > 1) {
-			months_temp--;
+		minutes--;
+		if (minutes < 0 || hours > 59) {
+			minutes = 59;
 		}
-
-		display_change_date();
-		lcd_cursor_off();
+		display_change_time();
 		break;
 	}
 }
 
-void change_year(void) {
-	display_change_date();
+void change_temperature(void) {
+	display_temperature();
+	lcd_locate(1, 4);
 	lcd_cursor_on();
-	lcd_locate(1, 9);
 	read_key();
 	switch (menu_event) {
 	case E_UP:
-		if (years_temp < 100) {	//maksymalny rok dla DS1307 to 2100
-			years_temp += 1;
+		if (temperature_temp < 40) {
+			temperature_temp++;
 		}
-		lcd_cursor_off();
-		display_change_date();
+		display_temperature();
 		break;
 	case E_DW:
-		if (years_temp > 0) {
-			years_temp--;
+		if (temperature_temp > 20) {//jaki ustawic zakres mo¿liwy do ustawienia?
+			temperature_temp--;
 		}
-		lcd_cursor_off();
-		display_change_date();
+		display_temperature();
 		break;
 	}
+}
+
+void change_humidity(void) {
+	display_change_humidity();
+	lcd_locate(1, 3);
+	lcd_cursor_on();
+	read_key();
+	switch (menu_event) {
+	case E_UP:
+		if (humidity_temp < 100) {
+			humidity_temp++;
+		}
+		lcd_cursor_off();
+		display_change_humidity();
+		break;
+	case E_DW:
+		if (humidity_temp > 30) {
+			humidity_temp--;
+		}
+		lcd_cursor_off();
+		display_change_humidity();
+		break;
+	}
+}
+
+void change_lighting(void) {
+	display_change_lighting();
+	lcd_locate(1, 9);
+	lcd_cursor_on();
+	switch (menu_event) {
+	case E_UP:
+		if (lighting_on < 24) {
+			lighting_on++;
+			lighting_off--;
+		}
+		lcd_cursor_off();
+		display_change_lighting();
+		break;
+	case E_DW:
+		if (lighting_on > 0) {
+			lighting_on--;
+			lighting_off++;
+		}
+		lcd_cursor_off();
+		display_change_lighting();
+		break;
+	}
+}
+
+void change_watering_amount(void) {//jak okreslic ilosc wody
+	display_watering_amount();
+	lcd_locate(1, 3);
+	lcd_cursor_on();
+	read_key();
+	switch (menu_event) {
+	case E_UP:
+		if (watering_amount <= 100) {
+			watering_amount += 100;
+		}
+		lcd_cursor_off();
+		display_watering_amount();
+		break;
+	case E_DW:
+		if (watering_amount >= 200) {
+			watering_amount -= 100;
+		}
+		lcd_cursor_off();
+		display_watering_amount();
+		break;
+	}
+}
+
+void change_watering_freq(void) {
+	lcd_locate(1, 3);
+	lcd_cursor_on();
+	read_key();
+	switch (menu_event) {
+	case E_UP:
+		if (watering_freq < 7) {
+			watering_freq++;
+			licznik_dni = watering_freq;
+		}
+		display_watering_freq();
+		break;
+	case E_DW:
+		if (watering_freq > 2) {
+			watering_freq--;
+			licznik_dni = watering_freq;
+		}
+		display_watering_freq();
+		break;
+	}
+}
+
+void setSaved(uint8_t saved) {
+	program_array[0] = saved;
+}
+
+void setTemperature(uint8_t temperature) {
+	program_array[1] = temperature;
+}
+
+void setHumidity(uint8_t humidity) {
+	program_array[2] = humidity;
+}
+
+void setLighting(uint8_t lighting) {
+	program_array[3] = lighting;
+}
+
+void setWateringAmount(uint8_t wateringAmount) {
+	program_array[4] = wateringAmount;
+}
+
+void setWateringFreq(uint8_t wateringFreq) {
+	program_array[5] = wateringFreq;
+}
+
+uint8_t getSaved(void) {
+	return program_array[0];
+}
+
+uint8_t getTemperature(void) {
+	return program_array[1];
+}
+
+uint8_t getHumidity(void) {
+	return program_array[2];
+}
+
+uint8_t getLighting(void) {
+	return program_array[3];
+}
+
+uint8_t getWateringAmount(void) {
+	return program_array[4];
+}
+
+uint8_t getWateringFreq(void) {
+	return program_array[5];
+}
+
+void printTime(uint8_t y, uint8_t x, uint8_t time) {
+	if (time > 9) {
+		printInt(y, x, time);
+	} else {
+		printInt(y, x + 1, time);
+	}
+}
+
+void printInt(uint8_t y, uint8_t x, uint8_t hours) {
+	lcd_locate(y, x);
+	lcd_int(hours);
 }
 
 void check_water_level(void) {//dodac zmienn¹ zamiast wyœwietlania wartoœci na wyœwietlaczu, napisac if je¿eli nie ma wody - czerwona dioda ma zaswiecic
@@ -323,293 +620,34 @@ void check_if_water(void) {	//sprawdzic dzia³anie
 
 		poziom_wody_flaga = 0;
 	}
-
-}
-
-void display_watering_amount(void) {
-	lcd_cls();
-	lcd_locate(0, 0);
-	lcd_str("Ilo" "\x82" "\x83" " wody");
-	lcd_locate(1, 2);
-	lcd_int(watering_amount_temp);
-	lcd_locate(1, 6);
-	lcd_str("ml");
-
-}
-
-void change_watering_amount(void) {//jak okreslic ilosc wody
-	display_watering_amount();
-	lcd_locate(1, 3);
-	lcd_cursor_on();
-	read_key();
-	switch (menu_event) {
-	case E_UP:
-		if (watering_amount_temp <= 100) {
-			watering_amount_temp += 100;
-		}
-		lcd_cursor_off();
-		display_watering_amount();
-		break;
-	case E_DW:
-		if (watering_amount_temp >= 200) {
-			watering_amount_temp -= 100;
-		}
-		lcd_cursor_off();
-		display_watering_amount();
-		break;
-	}
-}
-
-
-void display_watering_freq(void) {//dodac warunki na ró¿ne rzêdy wielkoœci dla kursora? dokoñczyc przerabianie funkcji
-	lcd_cls();
-	lcd_locate(0, 0);
-	lcd_str("Podlewanie co");
-	if (watering_freq_temp < 2) {
-		lcd_locate(1, 1);
-		//lcd_cursor_on();
-		lcd_int(watering_freq_temp);
-		lcd_locate(1, 4);
-		lcd_str("dzie" "\x85");
-	} else if (watering_freq_temp > 1) {
-		lcd_locate(1, 1);
-		lcd_int(watering_freq_temp);
-		lcd_locate(1, 4);
-		lcd_str("dni");
-	}
-}
-
-void change_watering_freq(void) {
-		lcd_locate(1, 3);
-		lcd_cursor_on();
-		read_key();
-		switch (menu_event) {
-		case E_UP:
-			if (watering_freq_temp < 7) {
-				watering_freq_temp++;
-				licznik_dni = watering_freq_temp;
-			}
-			display_watering_freq();
-			break;
-		case E_DW:
-			if (watering_freq_temp > 2) {
-				watering_freq_temp--;
-				licznik_dni = watering_freq_temp;
-			}
-			display_watering_freq();
-			break;
-		}
-	}
-
-
-//sprawdzic uklad wszystkiich case w switchach i poprawic
-void display_change_humidity(void) {
-	lcd_cls();
-	lcd_locate(0, 0);
-	lcd_str("Wilgotno" "\x82" "\x81");
-	lcd_locate(1, 0);
-	lcd_int(humidity_temp);
-	lcd_locate(1, 2);
-	lcd_str("%RH");
-}
-
-void change_humidity(void) {
-	display_change_humidity();
-	lcd_locate(1, 3);
-	lcd_cursor_on();
-	read_key();
-	switch (menu_event) {
-	case E_UP:
-		if (humidity_temp < 100) {
-			humidity_temp++;
-		}
-		lcd_cursor_off();
-		display_change_humidity();
-		break;
-	case E_DW:
-		if (humidity_temp > 30) {
-			humidity_temp--;
-		}
-		lcd_cursor_off();
-		display_change_humidity();
-		break;
-	}
-
-}
-
-void display_change_lighting(void) {
-	lcd_cls();
-	lcd_locate(0, 0);
-	lcd_str("\x82" "wiat" "\x86" "o" " w" "\x86" ":" "wy" "\x86");
-
-	if (lighting_on_temp < 10) {
-		lcd_locate(1, 9);
-		lcd_int(lighting_on_temp);
-		lcd_locate(1, 10);
-		lcd_char(':');
-		lcd_locate(1, 11);
-		lcd_int(lighting_off_temp);
-	} else {
-		lcd_locate(1, 8);
-		lcd_int(lighting_on_temp);
-		lcd_locate(1, 10);
-		lcd_char(':');
-		lcd_locate(1, 11);
-		lcd_int(lighting_off_temp);
-	}
-
-}
-
-void change_lighting(void) {
-	display_change_lighting();
-	lcd_locate(1, 9);
-	lcd_cursor_on();
-	switch (menu_event) {
-	case E_UP:
-		if (lighting_on_temp < 24) {
-			lighting_on_temp++;
-			lighting_off_temp--;
-		}
-		lcd_cursor_off();
-		display_change_lighting();
-		break;
-	case E_DW:
-		if (lighting_on_temp > 0) {
-			lighting_on_temp--;
-			lighting_off_temp++;
-		}
-		lcd_cursor_off();
-		display_change_lighting();
-		break;
-	}
-}
-
-void display_temperature(void) {
-	lcd_cls();
-	lcd_locate(0, 0);
-	lcd_str("Temperatura");
-	lcd_locate(1, 2);
-	lcd_int(temperature_temp);
-	lcd_locate(1, 4);
-	lcd_str("\x87" "C");
-}
-
-void change_temperature(void) {
-	display_temperature();
-	lcd_locate(1, 4);
-	lcd_cursor_on();
-	read_key();
-	switch (menu_event) {
-	case E_UP:
-		if (temperature_temp < 40) {
-			temperature_temp++;
-		}
-		display_temperature();
-		break;
-	case E_DW:
-		if (temperature_temp > 20) {//jaki ustawic zakres mo¿liwy do ustawienia?
-			temperature_temp--;
-		}
-		display_temperature();
-		break;
-	}
-}
-
-void change_minute(void) {
-	display_change_time();
-	lcd_locate(1, 4);
-	lcd_cursor_on();
-	read_key();
-	switch (menu_event) {
-	case E_UP:
-		minutes_temp++;
-
-		if (minutes_temp > 59) {
-			minutes_temp = 0;
-		}
-		display_change_time();
-
-		break;
-	case E_DW:
-		minutes_temp--;
-		if (minutes_temp < 0 || hours_temp > 59) {
-			minutes_temp = 59;
-		}
-		display_change_time();
-		break;
-	}
-}
-
-void change_hour(void) {
-	display_change_time();
-	lcd_locate(1, 1);
-	lcd_cursor_on();
-	read_key();
-	switch (menu_event) {
-	case E_UP:
-		hours_temp++;
-		if (hours_temp > 23) {
-			hours_temp = 0;
-		}
-		display_change_time();
-		break;
-	case E_DW:
-		hours_temp--;
-		if (hours_temp < 0 || hours_temp > 24) {
-			hours_temp = 23;
-		}
-		display_change_time();
-		break;
-
-	}
-}
-
-void read_key(void) {
-
-	if (((value >= 1021) && (value <= 1023)) && (!key_lock)) {
-		menu_event = E_UP;
-		key_lock = 1;
-	} else if ((value > 900) && (value <= 1020) && (!key_lock)) {
-		menu_event = E_DW;
-		key_lock = 1;
-	} else if ((value > 590) && (value <= 690) && (!key_lock)) {
-		menu_event = E_OK;
-		key_lock = 1;
-	} else if ((value > 420) && (value <= 520) && (!key_lock)) { //naciœniêty S4
-		menu_event = E_PREV;
-		key_lock = 1;
-	} else if (((value < 100) && key_lock)) { //¿aden przycisk nie jest naciœniêty
-		key_lock = 0;
-		menu_event = E_IDDLE;
-	}
 }
 
 void save_date_time(void) {
-	bufor[0] = dec2bcd((seconds_temp) & 0x7F);		//operacja bitowa and gwarantuje, ¿e na pierwszym miejscu bêdzie 0 i osc zostanie w³¹czony i zacznie isc czas
-	bufor[1] = dec2bcd(minutes_temp);
-	bufor[2] = dec2bcd(hours_temp);
-	bufor[4] = dec2bcd(days_temp);
-	bufor[5] = dec2bcd(months_temp);
-	bufor[6] = dec2bcd(years_temp);
+	bufor[0] = dec2bcd((seconds) & 0x7F);			//operacja bitowa and gwarantuje, ¿e na pierwszym miejscu bêdzie 0 i osc zostanie w³¹czony i zacznie isc czas
+	bufor[1] = dec2bcd(minutes);
+	bufor[2] = dec2bcd(hours);
+	bufor[4] = dec2bcd(days);
+	bufor[5] = dec2bcd(months);
+	bufor[6] = dec2bcd(years);
 
 	I2C_WRITE_BUFFER(DS1307_ADDR, 0x00, 7, bufor);
 }
 
-void save_parameters(void) {
-
-}
-
 void show_date_time(void) {
-	I2C_READ_BUFFER( DS1307_ADDR, 0x00, 7, bufor);
+	//
 	lcd_locate(1, 0);
-
+	lcd_int(1);
+	I2C_READ_BUFFER( DS1307_ADDR, 0x00, 7, bufor);
+	_delay_ms(2000);
 	sekundy = bcd2dec(bufor[0]);
 	minuty = bcd2dec(bufor[1]);
 	godziny = bcd2dec(bufor[2]);
 	dni = bcd2dec(bufor[4]);
 	miesiace = bcd2dec(bufor[5]);
 	lata = bcd2dec(bufor[6]);
-
+	lcd_locate(1, 0);
+	lcd_int(2);
+	_delay_ms(2000);
 	/*wyœwietlenie czasu na LCD*/
 	lcd_cls();
 	lcd_locate(0, 0);
@@ -668,20 +706,18 @@ void show_date_time(void) {
 		lcd_locate(1, 7);
 		lcd_int(lata);
 	}
-
 }
 
 void watering(void) {		//zmienic czasy, które dobrac eksperymentalnie
-	if (watering_amount_temp == 100) {
+	if (watering_amount == 100) {
 		PORTD |= (1 << PD2);
 		_delay_ms(1000);
 		PORTD &= ~(1 << PD2);
-	} else if (watering_amount_temp == 200) {
+	} else if (watering_amount == 200) {
 		PORTD |= (1 << PD2);
 		_delay_ms(2000);
 		PORTD &= ~(1 << PD2);
 	}
-
 }
 
 void check_hour(void) {//czy to dzia³a, sprawdzic po up³ywie czasu
@@ -689,8 +725,30 @@ void check_hour(void) {//czy to dzia³a, sprawdzic po up³ywie czasu
 	godziny = bcd2dec(bufor[2]);
 }
 
+void save_parameters(void) {
+	setSaved(1);						//czy to dzia³a poprawnie?
+	setTemperature(temperature_temp);
+	setHumidity(humidity_temp);
+	setLighting(lighting_on);
+	setWateringAmount(watering_amount);
+	setWateringFreq(watering_freq);
+
+	eeprom_update_block(program_array, 0, sizeof(program_array));
+}
+
+void read_parameters(void) {
+	eeprom_read_block(program_array, 0, sizeof(program_array));
+
+	program_saved = getSaved();
+	temperature_temp = getTemperature();
+	humidity_temp = getHumidity();
+	lighting_on = getLighting();
+	watering_amount = getWateringAmount();
+	watering_freq = getWateringFreq();
+}
+
 void save(void) {
 	save_parameters();
 	lcd_locate( 0 , 0 );
-	lcd_str("Data saved");
+	lcd_str("Program zapisany");
 }

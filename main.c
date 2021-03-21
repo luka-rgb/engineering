@@ -35,7 +35,7 @@ extern uint8_t lighting_on_temp;
 // global variable to count the number of overflows
 volatile uint8_t tot_overflow;
 
-int i = 0;
+int i = 0;	//czy to jest u¿ywane??
 
 // initialize timer, interrupt and variable
 void licznik1_init() {
@@ -94,57 +94,61 @@ ISR(TIMER1_OVF_vect) {
 
 	}
 }
-uint8_t ByteOfData ;
-unsigned int R_array[15],W_array[15];	//zmienic na tyle miejsc ile potrzebuje parametrów
 
-int main(void) {
+
+	//zmienic na tyle miejsc ile potrzebuje parametrów
+unsigned int program_array[6]= { 9431, 4, 2, 3, 4, 9 };
+
+void Initialization(void) {
 	lcd_init();
 
-	//eeprom_write_word(&W_array[0], 12);
-
-	R_array[0] = eeprom_read_word(&W_array[0]);
-
-
-		lcd_locate(0,0);
-		lcd_int(R_array[0]);		/* Print Read_array on LCD */
-
-	while (1) {
-
-	}
-}
-/*int main(void) {
-	lcd_init();
-
-	// initialize timer
-	licznik1_init();
-
-	//inicjalizacja ADC
+	/*inicjalizacja ADC*/
 	ADCSRA = (1 << ADEN); 	//w³¹czenie przetwornika ADC
 	ADCSRA |= (1 << ADPS2) | (1 << ADPS1);	//ustawienie przeskalera na 64
 	ADMUX |= REF_256;//wybór napiêcia odniesienia z wczeœniej zdefiniowanych makr
 
 	i2cSetBitrate(100); // USTAWIAMY prêdkoœæ 100 kHz na magistrali I2C
 
-	//przenieœc to do inicjalizacji
+	/*ustawianie portów na wejœcie/wyjœcie*/
 	DDRA |= (1 << PA2);
 	DDRA &= ~(1 << PA3);
 
 	PORTA |= (1 << PA2);
 
+	/*inicjalizacja timera*/
+	licznik1_init();
+
+	if (program_array[0] == 1) {
+		read_parameters();
+
+		current_menu = 3;	//zdefiniowac menu
+		change_menu();
+
+	} else {
+		current_menu = 2;
+		change_menu();
+	}
+}
+
+int main(void) {
+
+	Initialization();
+
 	while (1) {
 
-//czy da siê przeniesc start konwersji i resztê do funkcji read_key?
-		//		lcd_locate(0,0);
-		//		lcd_int(value);
 		ADCSRA |= (1 << ADSC);	//start konwersji
-		loop_until_bit_is_clear(ADCSRA, ADSC);
-		value = ADC;		//ADC to makro
-		sprintf(ADC_pomiar, "%d  ", value);		//zamiana na system dziesiêtny
+				loop_until_bit_is_clear(ADCSRA, ADSC);
+				value = ADC;		//ADC to makro
+				sprintf(ADC_pomiar, "%d  ", value);		//zamiana na system dziesiêtny
 
 		read_key();
 		if (menu_event) {
 			change_menu();
 		}
-
 	}
-}*/
+}
+
+
+
+
+
