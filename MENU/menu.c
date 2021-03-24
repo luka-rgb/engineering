@@ -38,7 +38,7 @@ uint8_t humidity_temp = 40;			//okreslic mo¿liw¹ wartosc humidity
 uint8_t temperature_temp = 10;		//okreslic mozliw¹ wartosc temperature
 uint8_t lighting_on = 12;
 uint8_t lighting_off = 12;
-uint8_t watering_amount;
+uint8_t watering_amount = 200;
 uint8_t watering_freq = 2;
 uint8_t sekundy = 0, minuty, godziny, dni, miesiace, lata;		//sprawdzic ró¿nicê w programie miêdzy seconds, a sekundy itd.
 
@@ -586,16 +586,18 @@ void printTime(uint8_t y, uint8_t x, uint8_t time) {
 	}
 }
 
-void printInt(uint8_t y, uint8_t x, uint8_t hours) {
+void printInt(uint8_t y, uint8_t x, uint8_t z) {
 	lcd_locate(y, x);
-	lcd_int(hours);
+	lcd_int(z);
 }
 
 void check_water_level(void) {//dodac zmienn¹ zamiast wyœwietlania wartoœci na wyœwietlaczu, napisac if je¿eli nie ma wody - czerwona dioda ma zaswiecic
-	//ADCSRA = (1 << ADEN); 					//w³¹czenie przetwornika ADC
+
+	ADMUX = (ADMUX & 0xF8) | 1;	//wybór u¿ywanego pinu ADC, domyœlanie u¿ywany jest PA0
+	_delay_us(250);
 	ADCSRA |= (1 << ADPS2) | (1 << ADPS1);	//ustawienie przeskalera na 8
 	ADMUX |= (1 << REFS0);//wybór napiêcia odniesienia z wczeœniej zdefiniowanych makr, W TYM PRZYPADKU vcc
-	ADMUX |= 1; 		//wybór u¿ywanego pinu ADC, domyœlanie u¿ywany jest PA0
+
 
 	ADCSRA |= (1 << ADSC);	//start konwersji
 	loop_until_bit_is_clear(ADCSRA, ADSC);
@@ -603,11 +605,12 @@ void check_water_level(void) {//dodac zmienn¹ zamiast wyœwietlania wartoœci na w
 	sprintf(ADC_pomiar_poziom, "%d  ", water_level);
 
 	printInt(1, 0, water_level);
-	if (water_level < 240) {	//mniej wiêcej 1/4 wysokoœci zanurzona w wodzie
+
+	/*if (water_level < 240) {	//mniej wiêcej 1/4 wysokoœci zanurzona w wodzie
 		water_level_flag = 0;
 	} else {
 		water_level_flag = 1;
-	}
+	}*/
 }
 
 void check_if_water(void) {	//sprawdzic dzia³anie
@@ -633,21 +636,15 @@ void save_date_time(void) {
 	I2C_WRITE_BUFFER(DS1307_ADDR, 0x00, 7, bufor);
 }
 
-void show_date_time(void) {
-	//
-	lcd_locate(1, 0);
-	lcd_int(1);
+void show_date_time(void) {//nie dzia³a
 	I2C_READ_BUFFER( DS1307_ADDR, 0x00, 7, bufor);
-	_delay_ms(2000);
 	sekundy = bcd2dec(bufor[0]);
 	minuty = bcd2dec(bufor[1]);
 	godziny = bcd2dec(bufor[2]);
 	dni = bcd2dec(bufor[4]);
 	miesiace = bcd2dec(bufor[5]);
 	lata = bcd2dec(bufor[6]);
-	lcd_locate(1, 0);
-	lcd_int(2);
-	_delay_ms(2000);
+
 	/*wyœwietlenie czasu na LCD*/
 	lcd_cls();
 	lcd_locate(0, 0);

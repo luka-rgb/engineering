@@ -43,11 +43,19 @@ void I2C_WRITE_BUFFER(uint8_t SLA, uint8_t adr, uint8_t len, uint8_t *buf) {
 void I2C_READ_BUFFER(uint8_t SLA, uint8_t adr, uint8_t len, uint8_t *buf){
 	I2C_START();
 	I2C_WRITE(SLA);
+
 	I2C_WRITE(adr);
+
 	I2C_START();
+
 	I2C_WRITE(SLA + 1);
+
 	while( len-- ) *buf++ = I2C_READ( len ? ACK : NACK);
+
 	I2C_STOP();
+
+
+
 }
 
 void i2cSetBitrate(uint16_t bitrateKHz) {

@@ -96,18 +96,13 @@ ISR(TIMER1_OVF_vect) {
 }
 
 
-	//zmienic na tyle miejsc ile potrzebuje parametrów
-unsigned int program_array[6]= { 9431, 4, 2, 3, 4, 9 };
+unsigned int program_array[6];
 
-void Initialization(void) {
+void initialization(void) {
 	lcd_init();
 
-	/*inicjalizacja ADC*/
-	ADCSRA = (1 << ADEN); 	//w³¹czenie przetwornika ADC
-	ADCSRA |= (1 << ADPS2) | (1 << ADPS1);	//ustawienie przeskalera na 64
-	ADMUX |= REF_256;//wybór napiêcia odniesienia z wczeœniej zdefiniowanych makr
-
-	i2cSetBitrate(100); // USTAWIAMY prêdkoœæ 100 kHz na magistrali I2C
+	/*USTAWIAMY prêdkoœæ 100 kHz na magistrali I2C*/
+	i2cSetBitrate(100);
 
 	/*ustawianie portów na wejœcie/wyjœcie*/
 	DDRA |= (1 << PA2);
@@ -121,30 +116,45 @@ void Initialization(void) {
 	if (program_array[0] == 1) {
 		read_parameters();
 
-		current_menu = 3;	//zdefiniowac menu
-		change_menu();
+		//current_menu = 3;	//zdefiniowac menu, do którego bêdzie sz³o po odczycie zmiennych
+		//change_menu();
 
 	} else {
-		current_menu = 2;
-		change_menu();
+		//current_menu = 2;
+		//change_menu();
 	}
+}
+
+void pomiar(void) {
+	/*inicjalizacja ADC*/
+	ADCSRA = (1 << ADEN); 	//w³¹czenie przetwornika ADC
+
+	ADMUX = (ADMUX & 0xF8) | 0;	//zerowanie pozosta³ych miejsc rejestru
+	_delay_us(250);
+	ADCSRA |= (1 << ADPS2) | (1 << ADPS1);	//ustawienie przeskalera na 64
+	ADMUX |= REF_256;//wybór napiêcia odniesienia z wczeœniej zdefiniowanych makr
+
+
+	ADCSRA |= (1 << ADSC);	//start konwersji
+	while ((ADCSRA & (1 << ADSC)));
+	//loop_until_bit_is_clear(ADCSRA, ADSC);
+	value = ADCW;		//ADC to makro
+	sprintf(ADC_pomiar, "%d  ", value);		//zamiana na system dziesiêtny
+
+	lcd_locate(0, 0);
+	lcd_int(value);
 }
 
 int main(void) {
 
-	Initialization();
+	initialization();
 
-	while (1) {
+	while (1){
 
-		ADCSRA |= (1 << ADSC);	//start konwersji
-				loop_until_bit_is_clear(ADCSRA, ADSC);
-				value = ADC;		//ADC to makro
-				sprintf(ADC_pomiar, "%d  ", value);		//zamiana na system dziesiêtny
-
-		read_key();
-		if (menu_event) {
-			change_menu();
-		}
+		/*read_key();
+		 if (menu_event) {
+		 change_menu();
+		 }*/
 	}
 }
 
