@@ -604,8 +604,6 @@ void check_water_level(void) {//dodac zmienn¹ zamiast wyœwietlania wartoœci na w
 	water_level = ADC;
 	sprintf(ADC_pomiar_poziom, "%d  ", water_level);
 
-	printInt(1, 0, water_level);
-
 	/*if (water_level < 240) {	//mniej wiêcej 1/4 wysokoœci zanurzona w wodzie
 		water_level_flag = 0;
 	} else {

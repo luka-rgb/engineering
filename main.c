@@ -140,9 +140,6 @@ void pomiar(void) {
 	//loop_until_bit_is_clear(ADCSRA, ADSC);
 	value = ADCW;		//ADC to makro
 	sprintf(ADC_pomiar, "%d  ", value);		//zamiana na system dziesiêtny
-
-	lcd_locate(0, 0);
-	lcd_int(value);
 }
 
 int main(void) {
