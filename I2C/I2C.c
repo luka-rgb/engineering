@@ -42,6 +42,7 @@ void I2C_WRITE_BUFFER(uint8_t SLA, uint8_t adr, uint8_t len, uint8_t *buf) {
 
 void I2C_READ_BUFFER(uint8_t SLA, uint8_t adr, uint8_t len, uint8_t *buf){
 	I2C_START();
+
 	I2C_WRITE(SLA);
 
 	I2C_WRITE(adr);
@@ -53,8 +54,6 @@ void I2C_READ_BUFFER(uint8_t SLA, uint8_t adr, uint8_t len, uint8_t *buf){
 	while( len-- ) *buf++ = I2C_READ( len ? ACK : NACK);
 
 	I2C_STOP();
-
-
 
 }
 
@@ -76,49 +75,6 @@ uint8_t bcd2dec(uint8_t bcd){
 	return ((((bcd)>>4)&0x0F)*10)+((bcd)&0x0F);
 }
 
-void pokaz_godzine( uint8_t sekundy, uint8_t minuty,uint8_t godziny)//czy to jest tutaj konieczne w ogóle?
-{
 
-	/*if(godziny<10)
-	{
-		lcd_locate(1,0);
-		lcd_char('0');
-		lcd_locate(1,1);
-		lcd_int(godziny);
-	}
-		else
-		{
-			lcd_locate(1,0);
-			lcd_int(godziny);
-	}
 
-		lcd_locate(1,2);
-		lcd_char(':');
-
-	if(minuty<10){
-		lcd_locate(1,3);
-		lcd_char('0');
-		lcd_locate(1,4);
-		lcd_int(minuty);
-
-		}
-		else{
-			lcd_locate(1,3);
-			lcd_int(minuty);
-		}
-			lcd_locate(1,5);
-		lcd_char(':');
-
-		if(sekundy<10){
-			lcd_locate(1,6);
-			lcd_char('0');
-			lcd_locate(1,7);
-			lcd_int(sekundy);
-		}
-		else{
-		lcd_locate(1,6);
-		lcd_int(sekundy);
-}*/
-
-}
 

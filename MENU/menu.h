@@ -26,6 +26,7 @@ volatile uint8_t poziom_wody_flaga;
 volatile uint8_t water_level_flag;
 char  ADC_pomiar[17];
 volatile uint16_t value;
+uint8_t program_saved;
 
 //czy muszê dodac tutaj wszystkie zmienne, z których korzystam w menu.c??
 

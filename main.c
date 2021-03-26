@@ -21,7 +21,7 @@
 #define REF_256 (1<<REFS1)|(1<<REFS0)	//makro na napiêcie odniesienia wewnêtrzne 2,56
 #define REF_VCC (1<<REFS0)		//makro na napiêcie odniesienia VCC
 
-uint8_t bufor[7];
+/*extern uint8_t bufor[7];*/
 
 char ADC_pomiar[17];
 volatile uint16_t value;
@@ -101,10 +101,12 @@ unsigned int program_array[6];
 void initialization(void) {
 	lcd_init();
 
+	ADCSRA = (1 << ADEN); 	//w³¹czenie przetwornika ADC
+
 	/*USTAWIAMY prêdkoœæ 100 kHz na magistrali I2C*/
 	i2cSetBitrate(100);
 
-	/*ustawianie portów na wejœcie/wyjœcie*/
+	/*ustawianie portów na wejœcie/wyjœcie dla czujnika poziomu wody*/
 	DDRA |= (1 << PA2);
 	DDRA &= ~(1 << PA3);
 
@@ -113,24 +115,24 @@ void initialization(void) {
 	/*inicjalizacja timera*/
 	licznik1_init();
 
-	if (program_array[0] == 1) {
-		read_parameters();
-
-		//current_menu = 3;	//zdefiniowac menu, do którego bêdzie sz³o po odczycie zmiennych
-		//change_menu();
+/*	read_parameters();
+	if (program_saved == 1) {
+		current_menu = 18;
+		change_menu();
 
 	} else {
-		//current_menu = 2;
-		//change_menu();
-	}
+		current_menu = 0;
+		change_menu();
+	}*/
+
 }
 
 void pomiar(void) {
 	/*inicjalizacja ADC*/
-	ADCSRA = (1 << ADEN); 	//w³¹czenie przetwornika ADC
 
-	ADMUX = (ADMUX & 0xF8) | 0;	//zerowanie pozosta³ych miejsc rejestru
-	_delay_us(250);
+
+	ADMUX = (ADMUX & 0xF8) | 0;	//zerowanie pozosta³ych miejsc rejestru poza wybranym pinem
+	_delay_us(250);		//zw³oka czasowa, ¿eby dobrze wyszed³ pomiar
 	ADCSRA |= (1 << ADPS2) | (1 << ADPS1);	//ustawienie przeskalera na 64
 	ADMUX |= REF_256;//wybór napiêcia odniesienia z wczeœniej zdefiniowanych makr
 
@@ -146,13 +148,14 @@ int main(void) {
 
 	initialization();
 
-	while (1){
+	/*while (1){
 
-		/*read_key();
+		pomiar();
+		read_key();
 		 if (menu_event) {
 		 change_menu();
-		 }*/
-	}
+		 }
+	}*/
 }
 
 
