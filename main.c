@@ -91,7 +91,6 @@ ISR(TIMER1_OVF_vect) {
 			PORTD &= ~(1 << PD3);	//zakoñczenie cyklu oœwietlenia
 		}
 		tot_overflow = 0;   // reset overflow counter
-
 	}
 }
 

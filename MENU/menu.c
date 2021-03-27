@@ -41,9 +41,7 @@ uint8_t temperature_temp = 22;		//okreslic mozliw¹ wartosc temperature
 uint8_t lighting_on = 12;
 uint8_t lighting_off = 12;
 uint16_t watering_amount = 200;
-uint8_t watering_freq = 2;
-uint8_t sekundy = 0;
-uint8_t	minuty, godziny, dni, miesiace, lata;		//sprawdzic ró¿nicê w programie miêdzy seconds, a sekundy itd.
+uint8_t	seconds_temp, minutes_temp, hours_temp, days_temp, months_temp, years_temp;		//sprawdzic ró¿nicê w programie miêdzy seconds, a seconds_temp itd.
 
 
 
@@ -653,46 +651,46 @@ void show_date_time(void) {	//trzeba po uruchomieniu najpierw zapisac parametry,
 
 	I2C_READ_BUFFER( DS1307_ADDR, 0x00, 7, bufor);
 
-	sekundy = bcd2dec(bufor[0]);
-	minuty = bcd2dec(bufor[1]);
-	godziny = bcd2dec(bufor[2]);
-	dni = bcd2dec(bufor[4]);	//rejestr bufor[3] jest na dzieñ tygodnia
-	miesiace = bcd2dec(bufor[5]);
-	lata = bcd2dec(bufor[6]);
+	seconds_temp = bcd2dec(bufor[0]);
+	minutes_temp = bcd2dec(bufor[1]);
+	hours_temp = bcd2dec(bufor[2]);
+	days_temp = bcd2dec(bufor[4]);	//rejestr bufor[3] jest na dzieñ tygodnia
+	months_temp = bcd2dec(bufor[5]);
+	years_temp = bcd2dec(bufor[6]);
 
 /*wyœwietlenie czasu na LCD*/
 	lcd_cls();
-	printTime(0,0,godziny);
+	printTime(0,0,hours_temp);
 	lcd_str(":");
-	printTime(0,3,minuty);
+	printTime(0,3,minutes_temp);
 	lcd_str(":");
-	printTime(0,6,sekundy);
+	printTime(0,6,seconds_temp);
 
 /*wyswietlanie daty na lcd*/
-	printTime(1,0,dni);
+	printTime(1,0,days_temp);
 	lcd_char('.');
-	printTime(1,3,miesiace);
-	if (lata < 10) {
+	printTime(1,3,months_temp);
+	if (years_temp < 10) {
 		lcd_locate(1, 5);
 		lcd_char('.');
 		lcd_locate(1, 6);
 		lcd_str("200");
 		lcd_locate(1, 9);
-		lcd_int(lata);
-	} else if (lata < 100) {
+		lcd_int(years_temp);
+	} else if (years_temp < 100) {
 		lcd_locate(1, 5);
 		lcd_char('.');
 		lcd_locate(1, 6);
 		lcd_str("20");
 		lcd_locate(1, 8);
-		lcd_int(lata);
+		lcd_int(years_temp);
 	} else {
 		lcd_locate(1, 5);
 		lcd_char('.');
 		lcd_locate(1, 6);
 		lcd_str("2");
 		lcd_locate(1, 7);
-		lcd_int(lata);
+		lcd_int(years_temp);
 	}
 }
 
@@ -710,7 +708,7 @@ void watering(void) {		//zmienic czasy, które dobrac eksperymentalnie
 
 void check_hour(void) {
 	I2C_READ_BUFFER( DS1307_ADDR, 0x00, 7, bufor);
-	godziny = bcd2dec(bufor[2]);
+	hours_temp = bcd2dec(bufor[2]);
 }
 
 void save_parameters(void) {
