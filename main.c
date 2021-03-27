@@ -69,11 +69,11 @@ ISR(TIMER1_OVF_vect) {
 			//PORTD |= (1<<PD2);
 			if (licznik_dni == watering_freq_temp) {
 				check_if_water();
-				if (poziom_wody_flaga == 1) {
+				if (watering_water_level_flag == 0) {
 					watering();
 					// no timer reset required here as the timer
 					// is reset every time it overflows
-				} else {
+				} else if (watering_water_level_flag == 8) {
 					//miganie czerwonej diody? dodac buzzer zamiast diody
 					PORTD |= (1 << PD0);
 					_delay_ms(1000);
@@ -148,16 +148,19 @@ int main(void) {
 
 	initialization();
 
-
+lcd_cls();
 	while (1){
-
+	check_if_water();
+	}
+	}
+		/*
 		pomiar();
 		read_key();
 		 if (menu_event) {
 		 change_menu();
 		 }
 	}
-}
+}*/
 
 
 

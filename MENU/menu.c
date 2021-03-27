@@ -618,24 +618,22 @@ void check_water_level(void) {
 	sprintf(ADC_pomiar_poziom, "%d  ", water_level);
 
 	if (water_level < 150) {
-		water_level_flag = 0;
+		humidity_water_level_flag = 1;
 
 	} else {
-		water_level_flag = 1;
+		humidity_water_level_flag = 0;
 		//zamiast ustawiania zmiennej w³¹czenie pompki i prze³¹czenie zaworu?
 	}
 }
 
 void check_if_water(void) {
+	uint8_t is_water = PINA & (1 << PA3);
 
-	if (PINA & (1 << PA3)) {
-
-		poziom_wody_flaga = 1;
-		//poprawic
-	} else if (!(PINA & (1 << PA3))) {
-
-		poziom_wody_flaga = 0;
+	for (int i = 0; i < 2; i++) {
+		is_water &= PINA & (1 << PA3);	//operacja iloczynu bitowego
+		_delay_ms(1000);
 	}
+	watering_water_level_flag = is_water;
 }
 
 void save_date_time(void) {

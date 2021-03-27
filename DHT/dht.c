@@ -216,7 +216,7 @@ void reg_temp(void) {
 		PORTD &= ~FOG;
 	} else if (hum_lower == 1) {
 		PORTD &= ~AIR;
-		if (water_level_flag == 1) {
+		if (humidity_water_level_flag == 0) {
 			PORTD |= FOG;
 
 		}
