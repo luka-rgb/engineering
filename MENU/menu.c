@@ -41,6 +41,7 @@ uint8_t temperature_temp = 22;		//okreslic mozliw¹ wartosc temperature
 uint8_t lighting_on = 12;
 uint8_t lighting_off = 12;
 uint16_t watering_amount = 200;
+uint8_t watering_freq = 2;
 uint8_t	seconds_temp, minutes_temp, hours_temp, days_temp, months_temp, years_temp;		//sprawdzic ró¿nicê w programie miêdzy seconds, a seconds_temp itd.
 
 
