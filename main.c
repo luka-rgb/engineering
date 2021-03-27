@@ -115,15 +115,15 @@ void initialization(void) {
 	/*inicjalizacja timera*/
 	licznik1_init();
 
-/*	read_parameters();
+	read_parameters();
 	if (program_saved == 1) {
 		current_menu = 18;
 		change_menu();
 
-	} else {
+	} else if (program_saved == 0) {
 		current_menu = 0;
 		change_menu();
-	}*/
+	}
 
 }
 
@@ -148,14 +148,15 @@ int main(void) {
 
 	initialization();
 
-	/*while (1){
+
+	while (1){
 
 		pomiar();
 		read_key();
 		 if (menu_event) {
 		 change_menu();
 		 }
-	}*/
+	}
 }
 
 

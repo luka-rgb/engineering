@@ -37,10 +37,10 @@ uint8_t years = 18;
 uint8_t bissextile;
 
 uint8_t humidity_temp = 40;			//okreslic mo¿liw¹ wartosc humidity
-uint8_t temperature_temp = 10;		//okreslic mozliw¹ wartosc temperature
+uint8_t temperature_temp = 22;		//okreslic mozliw¹ wartosc temperature
 uint8_t lighting_on = 12;
 uint8_t lighting_off = 12;
-uint8_t watering_amount = 200;
+uint16_t watering_amount = 200;
 uint8_t watering_freq = 2;
 uint8_t sekundy = 0;
 uint8_t	minuty, godziny, dni, miesiace, lata;		//sprawdzic ró¿nicê w programie miêdzy seconds, a sekundy itd.
@@ -88,9 +88,9 @@ const menu_item menu[] = {	//DOKOÑCZYC MENU Z domyslnym I zrobic zapis
 				{ { 12, 12, 12, 13, 11 },		change_humidity			,	NULL	,	NULL	},
 				{ { 13, 13, 13, 14, 12 },		change_lighting			,	NULL	,	NULL	},
 				{ { 14, 14, 14, 15, 13 },		change_watering_amount	,	NULL	,	NULL	},
-				{ { 15, 15, 15, 15, 14 },		change_watering_freq	,	NULL	,	NULL	},
-				{ { 16, 16, 16, 15, 14 },		NULL					,	M_3_1	,	M_3_2	},
-				{ { 17, 17, 17, 0 , 17 },		save					,	NULL	,	NULL	},		//czy po tym ma przechodzic na pocz¹tek?
+				{ { 15, 15, 15, 16, 14 },		change_watering_freq	,	NULL	,	NULL	},
+				{ { 16, 16, 16, 17, 15 },		NULL					,	M_3_1	,	M_3_2	},
+				{ { 17, 17, 17, 18 , 16 },		save					,	NULL	,	NULL	},		//czy po tym ma przechodzic na pocz¹tek?
 				{ { 18, 18, 18, 2, 18 },		NULL					,	M_4_1	,	M_4_2	},
 
 						};
@@ -221,7 +221,7 @@ void display_change_humidity(void) {
 	lcd_locate(1, 0);
 	lcd_int(humidity_temp);
 	lcd_locate(1, 2);
-	lcd_str("%RH");
+	lcd_str(" %RH");
 }
 
 void display_change_lighting(void) {
@@ -249,7 +249,7 @@ void display_change_lighting(void) {
 void display_watering_amount(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
-	lcd_str("Ilo" "\x82" "\x83" " wody");
+	lcd_str("Ilo" "\x82" "\x81" " wody");
 	lcd_locate(1, 2);
 	lcd_int(watering_amount);
 	lcd_locate(1, 6);
@@ -262,14 +262,13 @@ void display_watering_freq(void) {//dodac warunki na ró¿ne rzêdy wielkoœci dla k
 	lcd_str("Podlewanie co");
 	if (watering_freq < 2) {
 		lcd_locate(1, 1);
-		//lcd_cursor_on();
 		lcd_int(watering_freq);
-		lcd_locate(1, 4);
+		lcd_locate(1, 3);
 		lcd_str("dzie" "\x85");
 	} else if (watering_freq > 1) {
 		lcd_locate(1, 1);
 		lcd_int(watering_freq);
-		lcd_locate(1, 4);
+		lcd_locate(1, 3);
 		lcd_str("dni");
 	}
 }
@@ -418,11 +417,12 @@ void change_minute(void) {
 		display_change_time();
 		break;
 	}
+
 }
 
 void change_temperature(void) {
 	display_temperature();
-	lcd_locate(1, 4);
+	lcd_locate(1, 3);
 	lcd_cursor_on();
 	read_key();
 	switch (menu_event) {
@@ -445,19 +445,19 @@ void change_temperature(void) {
 
 void change_humidity(void) {
 	display_change_humidity();
-	lcd_locate(1, 3);
+	lcd_locate(1, 1);
 	lcd_cursor_on();
 	read_key();
 	switch (menu_event) {
 	case E_UP:
-		if (humidity_temp < 100) {
+		if (humidity_temp < 70) {
 			humidity_temp++;
 		}
 		lcd_cursor_off();
 		display_change_humidity();
 		break;
 	case E_DW:
-		if (humidity_temp > 30) {
+		if (humidity_temp > 35) {
 			humidity_temp--;
 		}
 		lcd_cursor_off();
@@ -492,12 +492,12 @@ void change_lighting(void) {
 
 void change_watering_amount(void) {//jak okreslic ilosc wody
 	display_watering_amount();
-	lcd_locate(1, 3);
+	lcd_locate(1, 4);
 	lcd_cursor_on();
 	read_key();
 	switch (menu_event) {
 	case E_UP:
-		if (watering_amount <= 100) {
+		if (watering_amount <= 200) {
 			watering_amount += 100;
 		}
 		lcd_cursor_off();
@@ -515,7 +515,7 @@ void change_watering_amount(void) {//jak okreslic ilosc wody
 
 void change_watering_freq(void) {
 	display_watering_freq();
-	lcd_locate(1, 3);
+	lcd_locate(1, 1);
 	lcd_cursor_on();
 	read_key();
 	switch (menu_event) {
@@ -528,12 +528,15 @@ void change_watering_freq(void) {
 		display_watering_freq();
 		break;
 	case E_DW:
-		if (watering_freq > 2) {
+		if (watering_freq > 1) {
 			watering_freq--;
 			licznik_dni = watering_freq;
 		}
 		lcd_cursor_off();
 		display_watering_freq();
+		break;
+	case E_OK:
+		lcd_cursor_off();
 		break;
 	}
 }
@@ -636,6 +639,8 @@ void check_if_water(void) {
 }
 
 void save_date_time(void) {
+	lcd_cursor_off();
+
 	bufor[0] = dec2bcd((seconds) & 0x7F);			//operacja bitowa and gwarantuje, ¿e na pierwszym miejscu bêdzie 0 i osc zostanie w³¹czony i zacznie isc czas
 	bufor[1] = dec2bcd(minutes);
 	bufor[2] = dec2bcd(hours);
@@ -733,6 +738,7 @@ void read_parameters(void) {
 }
 
 void save(void) {
+	lcd_cursor_off();
 	save_parameters();
 	lcd_locate( 0 , 0 );
 	lcd_str("Program zapisany");
