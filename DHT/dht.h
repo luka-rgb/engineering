@@ -16,8 +16,10 @@ References:
 
 void get_temp_hum(void);
 void compare_temp_hum(void);
-void reg_temp(void);
+void reg_temp_hum(void);
 void get_temp_hum(void);
+
+uint8_t temp_higher, temp_lower, temp_eq, hum_higher, hum_lower, hum_eq;
 
 #include <stdio.h>
 #include <avr/io.h>

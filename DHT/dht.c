@@ -15,17 +15,21 @@
 #include "../LCD/lcd44780.h"
 #include "../MENU/menu.h"
 #include "dht.h"
+#include "../INTERRUPTS/interrupts.h"
 
-#define HEAT (1<<PD0)			//makro okreœlaj¹ce HEAT jako pin PD6
-#define AIR (1<<PD1)
-#define FOG (1<<PD2)
+//PD0 ogrzewanie
+//PD1 nawwil¿anie
+//PD2 nawadnianie
+//PD3 wietrzenie
+//PD4 oœwietlenie
+//PD5 buzzer
 
-extern uint8_t temperature_temp;	//czy bez tego bêdzie widzia³o t¹ zmienn¹
+extern uint8_t temperature_temp;
 extern uint8_t humidity_temp;
-uint8_t temp_higher, temp_lower, temp_eq, hum_higher, hum_lower, hum_eq;
 
 int8_t temperature = 0;
 int8_t humidity = 0;
+
 
 char printbuff[100];
 
@@ -160,8 +164,6 @@ void show_temp_hum(void) {
 		lcd_locate(0, 0);
 		lcd_str("error");
 	}
-	compare_temp_hum();
-	reg_temp();
 }
 
 void get_temp_hum(void) {
@@ -175,52 +177,55 @@ void get_temp_hum(void) {
 	}
 }
 
-void compare_temp_hum(void) { //na warunku z tego bêdzie realizowane wietrzenie i grzanie
+void compare_temp_hum(void) {	//sprawdzone, dzia³a
+
+	get_temp_hum();
 
 	if (temperature > temperature_temp) {
 		temp_higher = 1;
 		temp_lower = 0;
-		/*
-		 lcd_locate(0, 0);
-		 lcd_int(temperature);
-		 lcd_locate(0, 3);
-		 lcd_int(temperature_temp);
-		 lcd_locate(0, 5);
-		 lcd_str("wieksza");
-		 */
+
 	} else if (temperature < temperature_temp) {
-		temp_lower = 1;
 		temp_higher = 0;
+		temp_lower = 1;
 	}
-	if (humidity > humidity_temp) {
+
+	if (humidity >= (humidity_temp + 5)) {
 		hum_higher = 1;
 		hum_lower = 0;
-	} else if (humidity < humidity_temp) {
-		hum_lower = 1;
+	} else if (humidity <= (humidity_temp - 5)) {
 		hum_higher = 0;
+		hum_lower = 1;
 	}
 }
 
-void reg_temp(void) {
+void reg_temp_hum(void) {		//sprawdzone, dzia³a
 
-//	if (temp_higher == 1) {
-//		PORTD |= AIR;
-//		PORTD &= ~HEAT;
-//	} else if (temp_lower == 1) {
-//		PORTD |= HEAT;
-//		PORTD &= ~AIR;
-//	}
+	compare_temp_hum();
+	check_water_level();
 
-	if (hum_higher == 1) {
-		PORTD |= AIR;
-		PORTD &= ~FOG;
-	} else if (hum_lower == 1) {
-		PORTD &= ~AIR;
-		if (humidity_water_level_flag == 0) {
-			PORTD |= FOG;
-
-		}
+	if (temp_higher == 1) {
+		PORTD |= (1 << PD5);
+		actions[5].time = 3;
 
 	}
+	if (temp_lower == 1) {
+		PORTD |= (1 << PD0);
+		actions[2].time = 5;
+	}
 
+	if (hum_higher == 1) {
+		PORTD |= (1 << PD3);
+		actions[3].time = 5;
+	}
+	if (hum_lower == 1) {
+
+		if (humidity_water_level_flag == 1) {
+			PORTD |= (1 << PD1);
+			actions[1].time = 5;
+		} else if (humidity_water_level_flag == 0) {
+			PORTD |= (1 << PD5);
+			actions[4].time = 3;
+		}
+	}
 }

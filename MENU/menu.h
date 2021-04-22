@@ -17,12 +17,12 @@
 
 extern volatile uint8_t	current_menu;
 extern volatile uint8_t	menu_event;
-extern volatile uint16_t value;
-extern volatile uint8_t key_lock;		// extern oznacza, ¿e zmienna jest zadeklarowana w innym pliku
+volatile uint16_t value;
+volatile uint8_t key_lock;		// extern oznacza, ¿e zmienna jest zadeklarowana w innym pliku
 extern volatile uint8_t loop;
 extern volatile int loop_date;
 volatile uint8_t licznik_dni;
-volatile uint8_t watering_water_level_flag;
+volatile uint8_t watering_water_level_flag,is_watered;
 volatile uint8_t humidity_water_level_flag;
 char  ADC_pomiar[17];
 volatile uint16_t value;
@@ -63,7 +63,7 @@ void watering(void);
 void check_hour(void);
 
 void printTime(uint8_t y, uint8_t x, uint8_t time);
-void printInt(uint8_t y, uint8_t x, uint8_t hours);
+void printInt(int8_t y, int8_t x, int16_t z);
 
 uint8_t getSaved(void);
 uint8_t getTemperature(void);
@@ -78,5 +78,8 @@ void setHumidity(uint8_t humidity);
 void setLighting(uint8_t Lighting);
 void setWateringAmount(uint8_t wateringAmount);
 void setWateringFreq(uint8_t wateringFreq);
+
+void check_watering(void);
+void check_lighting(void);
 
 #endif /* MENU_MENU_H_ */
