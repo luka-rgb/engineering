@@ -2,7 +2,7 @@
  * main.c
  *
  *  Created on: 17 gru 2020
- *      Author: lukas
+ *      Author: £ukasz ¯ukowski
  */
 
 #include <avr/io.h>
@@ -23,9 +23,6 @@
 #define REF_VCC (1<<REFS0)		//makro na napiêcie odniesienia VCC
 
 char ADC_pomiar[17];
-//extern volatile uint16_t value;
-//extern volatile uint8_t key_lock;//volatile oznacza, ¿e zmienna mo¿e byc zmieniona z zewn¹trz
-
 
 
 void initialization(void) {
@@ -42,18 +39,15 @@ void initialization(void) {
 
 	PORTA |= (1 << PA2);
 
-	/*inicjalizacja timera*/
-		//licznik1_init();	//sekundowy
-
-	//read_parameters();
-/*	if (program_saved == 1) {
+	read_parameters();
+	if (program_saved == 1) {
 		current_menu = 18;
 		change_menu();
 
 	} else if (program_saved == 0) {
 		current_menu = 0;
 		change_menu();
-	}*/
+	}
 
 }
 
@@ -68,7 +62,7 @@ void pomiar(void) {
 	ADCSRA |= (1 << ADSC);	//start konwersji
 	while ((ADCSRA & (1 << ADSC)));
 	loop_until_bit_is_clear(ADCSRA, ADSC);
-	value = ADCW;		//ADC to makro
+	value = ADCW;
 	sprintf(ADC_pomiar, "%d  ", value);		//zamiana na system dziesiêtny
 }
 
@@ -76,37 +70,15 @@ void pomiar(void) {
 int main(void) {
 
 	initialization();
-	//structure_init();
-
-//reg_temp_hum();
-
-	PORTD |= (1 << PD0);
-	_delay_ms(2000);
-	end_action(TEMP);
-	PORTD |= (1 << PD1);
-	_delay_ms(2000);
-	end_action(HUM);
-	PORTD |= (1 << PD2);
-	_delay_ms(2000);
-	end_action(WATER);
-	PORTD |= (1 << PD3);
-	_delay_ms(2000);
-	end_action(AIR);
-	PORTD |= (1 << PD4);
-	_delay_ms(2000);
-	end_action(LIGHT);
-	PORTD |= (1 << PD5);
-	_delay_ms(2000);
-	end_action(BUZZ);
+	structure_init();
 
 
 	while (1) {
-
 		pomiar();
 		read_key();
-		/*if (menu_event) {
+		if (menu_event) {
 			change_menu();
-		}*/
+		}
 	}
 }
 

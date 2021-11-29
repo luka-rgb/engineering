@@ -2,7 +2,7 @@
  * menu.h
  *
  *  Created on: 17 gru 2020
- *      Author: lukas
+ *      Author: £ukasz ¯ukowski
  */
 
 #ifndef MENU_MENU_H_
@@ -18,25 +18,23 @@
 extern volatile uint8_t	current_menu;
 extern volatile uint8_t	menu_event;
 volatile uint16_t value;
-volatile uint8_t key_lock;		// extern oznacza, ¿e zmienna jest zadeklarowana w innym pliku
+volatile uint8_t key_lock;
 extern volatile uint8_t loop;
 extern volatile int loop_date;
-volatile uint8_t licznik_dni;
-volatile uint8_t watering_water_level_flag,is_watered;
+volatile uint8_t watering_water_level_flag;
 volatile uint8_t humidity_water_level_flag;
 char  ADC_pomiar[17];
 volatile uint16_t value;
 uint8_t program_saved;
 
-//czy muszê dodac tutaj wszystkie zmienne, z których korzystam w menu.c??
 
 void change_menu();
-void menu_idle(uint8_t a,uint8_t b,uint8_t c);	//czy to jest potrzebne? jak zrobic ¿eby po stracie zasilania nie trzeba by³o za ka¿dym razem definiowac programu, jakas flaga podczas zapisu?
+void menu_idle(uint8_t a,uint8_t b,uint8_t c);
 void display_change_date(void);
 void change_day(void);
 void change_month(void);
 void check_water_level(void);
-void change_year(void);	//dodac w menu.c change_date
+void change_year(void);
 void display_change_time(void);
 void change_hour(void);
 void change_minute(void);
@@ -61,7 +59,7 @@ void show_temp_hum(void);
 void read_key();
 void watering(void);
 void check_hour(void);
-
+void read_date_time(void);
 void printTime(uint8_t y, uint8_t x, uint8_t time);
 void printInt(int8_t y, int8_t x, int16_t z);
 

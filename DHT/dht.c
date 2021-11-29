@@ -18,7 +18,7 @@
 #include "../INTERRUPTS/interrupts.h"
 
 //PD0 ogrzewanie
-//PD1 nawwil¿anie
+//PD1 nawil¿anie
 //PD2 nawadnianie
 //PD3 wietrzenie
 //PD4 oœwietlenie
@@ -109,7 +109,7 @@ int8_t dht_getdata(int8_t *temperature, int8_t *humidity) {
 		} else {
 			*temperature = (float) (rawtemperature) / 10.0;
 		}
-		*humidity = (float) (rawhumidity) / 10.0;		//dlaczego tutaj jest float
+		*humidity = (float) (rawhumidity) / 10.0;
 
 		return 0;
 	}
@@ -177,7 +177,7 @@ void get_temp_hum(void) {
 	}
 }
 
-void compare_temp_hum(void) {	//sprawdzone, dzia³a
+void compare_temp_hum(void) {
 
 	get_temp_hum();
 
@@ -199,19 +199,20 @@ void compare_temp_hum(void) {	//sprawdzone, dzia³a
 	}
 }
 
-void reg_temp_hum(void) {		//sprawdzone, dzia³a
+void reg_temp_hum(void) {
 
 	compare_temp_hum();
 	check_water_level();
 
+	if (temp_lower == 1) {
+		PORTD |= (1 << PD0);
+				actions[2].time = 4;
+
+	}
 	if (temp_higher == 1) {
 		PORTD |= (1 << PD5);
 		actions[5].time = 3;
 
-	}
-	if (temp_lower == 1) {
-		PORTD |= (1 << PD0);
-		actions[2].time = 5;
 	}
 
 	if (hum_higher == 1) {
@@ -222,10 +223,10 @@ void reg_temp_hum(void) {		//sprawdzone, dzia³a
 
 		if (humidity_water_level_flag == 1) {
 			PORTD |= (1 << PD1);
-			actions[1].time = 5;
+			actions[1].time = 8;
 		} else if (humidity_water_level_flag == 0) {
 			PORTD |= (1 << PD5);
-			actions[4].time = 3;
+			actions[5].time = 3;
 		}
 	}
 }

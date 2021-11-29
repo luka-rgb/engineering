@@ -31,8 +31,10 @@ void structure_init() {
 void check_actions() {
 	for (int i = 0; i < sizeof(actions); i++) {
 
+		key_lock = 1;
 		if (actions[i].time > 1) {
 			actions[i].time--;
+
 		} else if (actions[i].time == 1) {
 			actions[i].time--;
 			end_action(i);
@@ -43,10 +45,9 @@ void check_actions() {
 }
 
 void check_parameters() {
-
-	if (tot_overflow >= 10/*60*/) {//je¿eli siê zacina to na RTC
+	if (tot_overflow >= 60) {
 		reg_temp_hum();
-		check_lighting();//sprawdzic pin uzywane
+		check_lighting();
 		check_watering();
 
 		tot_overflow = 0;
@@ -108,5 +109,6 @@ ISR(TIMER1_COMPA_vect) {	//sekundowy
 
 	check_actions();
 	check_parameters();
+
 }
 

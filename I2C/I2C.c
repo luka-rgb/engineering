@@ -1,15 +1,15 @@
 /*
  * I2C.c
  *
- *  Created on: 22 gru 2020
- *      Author: lukas
+ *  Created on: 2010-09-07
+ *      Autor: Miros³aw Kardaœ
  */
 #include <avr/io.h>
 #include "I2C.h"
 #include "../LCD/lcd44780.h"
 
 void I2C_START(void){
-	TWCR = ( 1<<TWINT ) | ( 1<<TWEN ) | ( 1<<TWSTA );		// | (TWSR = 0x00) NIC NIE ZMIENI£O
+	TWCR = ( 1<<TWINT ) | ( 1<<TWEN ) | ( 1<<TWSTA );
 	while ( !( TWCR & ( 1<<TWINT ) ) );
 }
 

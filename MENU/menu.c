@@ -17,12 +17,13 @@
 #include "../DHT/dht.h"
 #include "../INTERRUPTS/interrupts.h"
 
-volatile uint8_t current_menu = 0;		//pocz¹tkowy stan menu
+volatile uint8_t current_menu = 0;
 volatile uint8_t menu_event = E_IDDLE;
 volatile uint8_t loop = 0;
 char ADC_pomiar_poziom[17];
 volatile uint16_t value;
 volatile uint8_t water_level;
+volatile uint8_t licznik_dni = 0;
 
 unsigned int program_array[6];
 
@@ -37,13 +38,13 @@ uint8_t months = 4;
 uint8_t years = 21;
 uint8_t bissextile;
 
-uint8_t humidity_temp = 33;			//okreslic mo¿liw¹ wartosc humidity
-uint8_t temperature_temp = 26;		//okreslic mozliw¹ wartosc temperature
+uint8_t humidity_temp = 40;
+uint8_t temperature_temp = 23;
 uint8_t lighting_on = 12;
 uint8_t lighting_off = 12;
 uint16_t watering_amount = 200;
 uint8_t watering_freq = 1;
-uint8_t	seconds_temp, minutes_temp, hours_temp, days_temp, months_temp, years_temp;		//sprawdzic ró¿nicê w programie miêdzy seconds, a seconds_temp itd.
+uint8_t	seconds_temp, minutes_temp, hours_temp, days_temp, months_temp, years_temp;
 uint8_t is_light_on;
 
 
@@ -79,25 +80,25 @@ const menu_item menu[] = {
 				{ { 5, 5, 5, 6, 4 },			change_hour				,	NULL	,	NULL	},
 				{ { 6, 6, 6, 7, 5 },			change_minute			,	NULL	,	NULL	},
 				{ { 7, 7, 7, 8, 6 }, 			save_date_time			,	M_1_3	,	M_1_4	},
-				{ { 8, 8, 8, 9, 7 }, 			show_date_time			,	NULL	,	NULL	},		//u¿ywane do sprawdzania czy zacz¹³ iœc zegar w RTC
+				{ { 8, 8, 8, 9, 7 }, 			show_date_time			,	NULL	,	NULL	},
 				{ { 9, 9, 9, 10, 8 }, 			NULL					,	M_2_1	,	M_2_2	},
 				{ { 10, 10, 10, 11, 9 }, 		show_temp_hum			,	NULL	,	NULL	},
 				{ { 11, 11, 11, 12, 10 }, 		change_temperature		,	NULL	,	NULL	},
 				{ { 12, 12, 12, 13, 11 },		change_humidity			,	NULL	,	NULL	},
 				{ { 13, 13, 13, 14, 12 },		change_lighting			,	NULL	,	NULL	},
-				{ { 14, 14, 14, 15, 13 },		change_watering_amount	,	NULL	,	NULL	},
-				{ { 15, 15, 15, 16, 14 },		change_watering_freq	,	NULL	,	NULL	},
+				{ { 14, 14, 14, 15, 13 },		change_watering_freq	,	NULL	,	NULL	},
+				{ { 15, 15, 15, 16, 14 },		change_watering_amount	,	NULL	,	NULL	},
 				{ { 16, 16, 16, 17, 15 },		NULL					,	M_3_1	,	M_3_2	},
-				{ { 17, 17, 17, 18 , 16 },		save					,	NULL	,	NULL	},		//czy po tym ma przechodzic na pocz¹tek?
+				{ { 17, 17, 17, 18 , 16 },		save					,	NULL	,	NULL	},
 				{ { 18, 18, 18, 2, 18 },		NULL					,	M_4_1	,	M_4_2	},
 
 						};
 
 
 void change_menu() {
-	//przejdz do nastepnego
-	if (menu_event < 5) {//dlaczego tutaj jest 5? bo taka jest liczba przycisków?
-		current_menu = menu[current_menu].next_state[menu_event];	//stanu
+	//przejdz do nastepnego stanu
+	if (menu_event < 5) {
+		current_menu = menu[current_menu].next_state[menu_event];
 
 		//wyswietl komunikaty
 		lcd_cls();
@@ -125,22 +126,18 @@ void change_menu() {
 }
 
 void read_key(void) {
-	if (((value > 310) && (value < 350)) && (!key_lock)) {
+	if (((value > 310) && (value < 350)) && (!key_lock)) {	//wciœniêty S1
 		menu_event = E_UP;
 		key_lock = 1;
-		//printInt(0,0,value);
-	} else if ((value > 550) && (value < 590) && (!key_lock)) {
+	} else if ((value > 550) && (value < 590) && (!key_lock)) {	//wciœniêty S2
 		menu_event = E_DW;
 		key_lock = 1;
-		//printInt(0,0,value);
-	} else if ((value > 730) && (value < 770) && (!key_lock)) {
+	} else if ((value > 730) && (value < 770) && (!key_lock)) {	//wciœniêty S3
 		menu_event = E_OK;
 		key_lock = 1;
-		//printInt(0,0,value);
 	} else if ((value > 870) && (value < 920) && (!key_lock)) { //naciœniêty S4
 		menu_event = E_PREV;
 		key_lock = 1;
-		//printInt(0,0,value);
 	} else if (((value > 1000) && key_lock)) { //¿aden przycisk nie jest naciœniêty
 		key_lock = 0;
 		menu_event = E_IDDLE;
@@ -257,7 +254,7 @@ void display_watering_amount(void) {
 	lcd_str("ml");
 }
 
-void display_watering_freq(void) {//dodac warunki na ró¿ne rzêdy wielkoœci dla kursora? dokoñczyc przerabianie funkcji
+void display_watering_freq(void) {
 	lcd_cls();
 	lcd_locate(0, 0);
 	lcd_str("Podlewanie co");
@@ -275,6 +272,7 @@ void display_watering_freq(void) {//dodac warunki na ró¿ne rzêdy wielkoœci dla k
 }
 
 void change_year(void) {
+	read_date_time();
 	display_change_date();
 	lcd_locate(1, 9);
 	lcd_cursor_on();
@@ -369,6 +367,7 @@ void if_bissextile(void) {
 }
 
 void change_hour(void) {
+
 	display_change_time();
 	lcd_locate(1, 1);
 	lcd_cursor_on();
@@ -411,7 +410,7 @@ void change_minute(void) {
 		break;
 	case E_DW:
 		minutes--;
-		if (minutes < 0 || hours > 59) {
+		if (minutes < 0 || minutes > 60) {
 			minutes = 59;
 		}
 		lcd_cursor_off();
@@ -435,7 +434,7 @@ void change_temperature(void) {
 		display_temperature();
 		break;
 	case E_DW:
-		if (temperature_temp > 23) {//jaki ustawic zakres mo¿liwy do ustawienia?
+		if (temperature_temp > 23) {
 			temperature_temp--;
 		}
 		lcd_cursor_off();
@@ -451,14 +450,14 @@ void change_humidity(void) {
 	read_key();
 	switch (menu_event) {
 	case E_UP:
-		if (humidity_temp < 70) {
+		if (humidity_temp < 90) {
 			humidity_temp++;
 		}
 		lcd_cursor_off();
 		display_change_humidity();
 		break;
 	case E_DW:
-		if (humidity_temp > 35) {
+		if (humidity_temp > 20) {
 			humidity_temp--;
 		}
 		lcd_cursor_off();
@@ -491,7 +490,7 @@ void change_lighting(void) {
 	}
 }
 
-void change_watering_amount(void) {//jak okreslic ilosc wody
+void change_watering_amount(void) {
 	display_watering_amount();
 	lcd_locate(1, 4);
 	lcd_cursor_on();
@@ -623,6 +622,7 @@ void check_water_level(void) {
 	} else {
 		humidity_water_level_flag = 1;
 	}
+
 }
 
 void check_if_water(void) {
@@ -638,7 +638,7 @@ void check_if_water(void) {
 void save_date_time(void) {
 	lcd_cursor_off();
 
-	bufor[0] = dec2bcd((seconds) & 0x7F);			//operacja bitowa and gwarantuje, ¿e na pierwszym miejscu bêdzie 0 i osc zostanie w³¹czony i zacznie isc czas
+	bufor[0] = dec2bcd((seconds) & 0x7F);			//operacja bitowa and gwarantuje, ¿e na pierwszym miejscu bêdzie 0 i osc zostanie w³¹czony i zacznie zliczac czas
 	bufor[1] = dec2bcd(minutes);
 	bufor[2] = dec2bcd(hours);
 	bufor[4] = dec2bcd(days);
@@ -696,7 +696,19 @@ void show_date_time(void) {
 	}
 }
 
-void watering(void) {		//zmienic czasy, które dobrac eksperymentalnie
+void read_date_time(void) {
+	I2C_READ_BUFFER( DS1307_ADDR, 0x00, 7, bufor);
+
+
+	minutes = bcd2dec(bufor[1]);
+	hours = bcd2dec(bufor[2]);
+	//rejestr bufor[3] jest na dzieñ tygodnia
+	days = bcd2dec(bufor[4]);
+	months = bcd2dec(bufor[5]);
+	years = bcd2dec(bufor[6]);
+}
+
+void watering(void) {
 
 	if (watering_amount == 100) {
 		PORTD |= (1 << PD2);
@@ -705,35 +717,30 @@ void watering(void) {		//zmienic czasy, które dobrac eksperymentalnie
 	} else if (watering_amount == 200) {
 		PORTD |= (1 << PD2);
 		actions[0].time = 10;
-
 	}
-	is_watered = 1;
 	licznik_dni = 0;
 }
 
 void check_watering(void) {
-	if (licznik_dni == watering_freq) {
-		check_hour();
 
-		if (hours_temp == 16) {
-			if (is_watered == 0) {
-				check_if_water();
-				if (watering_water_level_flag == 0) {
-					watering();
-
-				} else if (watering_water_level_flag == 8) {
-					PORTD |= (1 << PD5);
-					actions[4].time = 3;
-					PORTD &= ~(1 << PD5);
-				}
-			}
-		} else {
-			is_watered = 0;
-		}
-	} else {
+	check_hour();
+	if ((hours_temp == 7) && (minutes_temp == 0)) {
 		licznik_dni++;
+		if (licznik_dni == watering_freq) {
+			check_if_water();
+			if (watering_water_level_flag == 0) {
+				watering();
+
+			} else if (watering_water_level_flag == 8) {
+				PORTD |= (1 << PD5);
+				actions[5].time = 3;
+				licznik_dni = 0;
+			}
+		}
+
 	}
 }
+
 
 void check_lighting(void) {
 	check_hour();
@@ -754,10 +761,11 @@ void check_lighting(void) {
 void check_hour(void) {
 	I2C_READ_BUFFER( DS1307_ADDR, 0x00, 7, bufor);
 	hours_temp = bcd2dec(bufor[2]);
+	minutes_temp = bcd2dec(bufor[1]);
 }
 
 void save_parameters(void) {
-	setSaved(1);						//czy to dzia³a poprawnie?
+	setSaved(program_saved);
 	setTemperature(temperature_temp);
 	setHumidity(humidity_temp);
 	setLighting(lighting_on);
@@ -780,6 +788,7 @@ void read_parameters(void) {
 
 void save(void) {
 	lcd_cursor_off();
+	program_saved = 1;
 	save_parameters();
 	lcd_locate( 0 , 0 );
 	lcd_str("Program zapisany");
